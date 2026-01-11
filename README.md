@@ -29,32 +29,32 @@ Objective: A system to save and recall funny moments.
 
 ## PHASE 3: THE SQUAD ASSEMBLER (LFG)
 Objective: Gather players for specific games without spamming everyone.
-[ ] Role Setup: Ensure Discord roles exist for games (e.g., "Valorant", "Minecraft").
-[ ] Command `/assemble`:
+[x] Role Setup: Ensure Discord roles exist for games (e.g., "Valorant", "Minecraft").
+[x] Command `/assemble`:
     - Input: select list of games.
     - Action: Ping the specific Role.
     - Feature: Send an Embed with a "Join Party" button.
-[ ] Button Logic:
+[x] Button Logic:
     - On Click: Add username to the Embed list (0/5 -> 1/5).
     - Limit: Prevent >5 players if the game doesn't support it.
 
 ## PHASE 4: STATS & SHAME (API Integration)
 Objective: Connect to game data for banter.
-[ ] Accounts: Get API Keys (Riot Games, Steam, etc.).
-[ ] Link Accounts: Command `/link [riot_id]` to save user's game ID to their Discord ID.
-[ ] Command `/stats`: Fetch recent match KDA/Winrate.
-[ ] Auto-Post (Advanced):
+[x] Accounts: Get API Keys (Riot Games, Steam, etc.).
+[x] Link Accounts: Command `/link [riot_id]` to save user's game ID to their Discord ID.
+[x] Command `/stats`: Fetch recent match KDA/Winrate.
+[x] Auto-Post (Advanced):
     - Check match history every 10 mins.
     - Logic: If KDA < 0.5 -> Post "Trash" meme.
     - Logic: If KDA > 3.0 -> Post "MVP" meme.
 
 ## PHASE 5: UTILITY & MINI-GAMES
 Objective: Tools for scheduling and queue-time fun.
-[ ] Command `/schedule`:
+[x] Command `/schedule`:
     - Input: Time/Day.
     - Action: Create a formatted Poll (React with ✅ for Yes, ❌ for No).
-[ ] Timezone logic: Use Discord timestamp formatting (<t:timestamp:R>) so it shows correct time for everyone.
-[ ] Mini-Game: "Russian Roulette"
+[x] Timezone logic: Use Discord timestamp formatting (<t:timestamp:R>) so it shows correct time for everyone.
+[x] Mini-Game: "Russian Roulette"
     - Command: `/roulette`
     - Logic: 1/6 chance to timeout the user for 60 seconds.
 

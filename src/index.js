@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, Collection, Events, Partials, EmbedBuilder } 
 const fs = require('node:fs');
 const path = require('node:path');
 const db = require('./database'); // Import database
+const { startMonitoring } = require('./utils/monitor');
 
 const client = new Client({
     intents: [
@@ -142,8 +143,8 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 });
 
 client.once(Events.ClientReady, c => {
-
     console.log(`Bereit! Eingeloggt als ${c.user.tag}`);
+    startMonitoring(c);
 });
 
 client.login(process.env.DISCORD_TOKEN);

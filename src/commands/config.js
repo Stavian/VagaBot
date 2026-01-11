@@ -16,6 +16,14 @@ module.exports = {
                         .setRequired(true)))
         .addSubcommand(subcommand =>
             subcommand
+                .setName('log_channel')
+                .setDescription('Setze den Kanal für Gaming-Stats und Roasts.')
+                .addChannelOption(option => 
+                    option.setName('kanal')
+                        .setDescription('Der Zielkanal')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
                 .setName('add_game')
                 .setDescription('Füge ein Spiel für das LFG-System hinzu.')
                 .addStringOption(option => option.setName('name').setDescription('Name des Spiels').setRequired(true)))
@@ -84,6 +92,10 @@ module.exports = {
             const role = interaction.options.getRole('rolle');
             db.setConfig('tag_creator_role_id', role.id);
             await interaction.reply({ content: `Die Rolle **${role.name}** ist nun berechtigt, neue Tags zu erstellen.`, ephemeral: true });
+        } else if (subcommand === 'log_channel') {
+            const channel = interaction.options.getChannel('kanal');
+            db.setConfig('bot_log_channel_id', channel.id);
+            await interaction.reply({ content: `✅ Kanal ${channel} wurde als Log-Kanal für Gaming-Stats festgelegt.`, ephemeral: true });
         } else if (subcommand === 'add_game') {
             const name = interaction.options.getString('name');
             

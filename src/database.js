@@ -57,6 +57,26 @@ db.exec(`
     )
 `);
 
+db.exec(`
+    CREATE TABLE IF NOT EXISTS user_links (
+        user_id TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        external_id TEXT NOT NULL,
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, platform)
+    )
+`);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS last_matches (
+        user_id TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        match_id TEXT NOT NULL,
+        PRIMARY KEY (user_id, platform)
+    )
+`);
+
 // Migration: Remove role_id if it exists (simplest way is to ignore for now or recreate, 
 // but since we are dev, we just ensure the new structure works for new entries. 
 // Ideally we would migrate data, but for this switch we'll just handle new structure).
@@ -144,6 +164,33 @@ module.exports = {
     getUserSubscriptions: (userId) => {
         const stmt = db.prepare('SELECT game_name FROM subscriptions WHERE user_id = ?');
         return stmt.all(userId).map(row => row.game_name);
+    },
+
+    // User Linking (Phase 4)
+    linkUser: (userId, platform, externalId, metadata = null) => {
+        const stmt = db.prepare('INSERT OR REPLACE INTO user_links (user_id, platform, external_id, metadata) VALUES (?, ?, ?, ?)');
+        return stmt.run(userId, platform, externalId, metadata);
+    },
+    getLinkedUser: (userId, platform) => {
+        const stmt = db.prepare('SELECT * FROM user_links WHERE user_id = ? AND platform = ?');
+        return stmt.get(userId, platform);
+    },
+    removeLink: (userId, platform) => {
+        const stmt = db.prepare('DELETE FROM user_links WHERE user_id = ? AND platform = ?');
+        return stmt.run(userId, platform);
+    },
+    getAllLinksForPlatform: (platform) => {
+        const stmt = db.prepare('SELECT * FROM user_links WHERE platform = ?');
+        return stmt.all(platform);
+    },
+    setLastMatch: (userId, platform, matchId) => {
+        const stmt = db.prepare('INSERT OR REPLACE INTO last_matches (user_id, platform, match_id) VALUES (?, ?, ?)');
+        return stmt.run(userId, platform, matchId);
+    },
+    getLastMatch: (userId, platform) => {
+        const stmt = db.prepare('SELECT match_id FROM last_matches WHERE user_id = ? AND platform = ?');
+        const result = stmt.get(userId, platform);
+        return result ? result.match_id : null;
     },
 
     // Tag Management
