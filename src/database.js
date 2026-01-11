@@ -89,6 +89,27 @@ module.exports = {
         return result ? result.value : null;
     },
 
+    // Role Permission Management
+    addConfigRole: (roleId) => {
+        const current = module.exports.getConfig('config_roles');
+        let roles = current ? current.split(',') : [];
+        if (!roles.includes(roleId)) {
+            roles.push(roleId);
+            module.exports.setConfig('config_roles', roles.join(','));
+        }
+    },
+    removeConfigRole: (roleId) => {
+        const current = module.exports.getConfig('config_roles');
+        if (!current) return;
+        let roles = current.split(',');
+        roles = roles.filter(id => id !== roleId);
+        module.exports.setConfig('config_roles', roles.join(','));
+    },
+    getConfigRoles: () => {
+        const current = module.exports.getConfig('config_roles');
+        return current ? current.split(',') : [];
+    },
+
     // Game Management (LFG)
     addGame: (name) => {
         const stmt = db.prepare('INSERT OR REPLACE INTO games (name, max_players) VALUES (?, ?)');
