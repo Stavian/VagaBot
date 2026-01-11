@@ -33,8 +33,12 @@ module.exports = {
             .setColor(0x0099FF)
             .setTitle(`Zitat von ${quote.username}`)
             .setDescription(`"${quote.quote_text}"`)
-            .setFooter({ text: `Hinzugefügt von ${quote.added_by} | Kategorie: ${displayCategory}` })
+            .setFooter({ text: `ID: ${quote.id} | Hinzugefügt von ${quote.added_by} | Kategorie: ${displayCategory}` })
             .setTimestamp(new Date(quote.timestamp));
+
+        if (quote.image_url) {
+            embed.setImage(quote.image_url);
+        }
 
         await interaction.reply({ embeds: [embed] });
     },

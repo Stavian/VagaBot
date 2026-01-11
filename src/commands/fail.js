@@ -27,8 +27,12 @@ module.exports = {
             .setColor(0xFF0000)
             .setTitle(`🔥 FAIL: ${quote.username}`)
             .setDescription(`"${quote.quote_text}"`)
-            .setFooter({ text: `Erinnert von ${quote.added_by}` })
+            .setFooter({ text: `ID: ${quote.id} | Erinnert von ${quote.added_by}` })
             .setTimestamp(new Date(quote.timestamp));
+
+        if (quote.image_url) {
+            embed.setImage(quote.image_url);
+        }
 
         await interaction.reply({ embeds: [embed] });
     },
