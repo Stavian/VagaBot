@@ -3,13 +3,13 @@ const db = require('../database');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('quote')
+        .setName('zitat')
         .setDescription('Erhalte ein zufälliges Zitat.')
         .addUserOption(option => 
-            option.setName('user')
+            option.setName('nutzer')
                 .setDescription('Nach Nutzer filtern (optional)')),
     async execute(interaction) {
-        const user = interaction.options.getUser('user');
+        const user = interaction.options.getUser('nutzer');
         
         let quote;
         if (user) {
@@ -22,11 +22,18 @@ module.exports = {
             return interaction.reply({ content: 'Keine Zitate gefunden!', ephemeral: true });
         }
 
+        const categoryNames = {
+            'general': 'Allgemein',
+            'fail': 'Fail',
+            'win': 'Win'
+        };
+        const displayCategory = categoryNames[quote.category] || quote.category;
+
         const embed = new EmbedBuilder()
             .setColor(0x0099FF)
             .setTitle(`Zitat von ${quote.username}`)
             .setDescription(`"${quote.quote_text}"`)
-            .setFooter({ text: `Hinzugefügt von ${quote.added_by} | Kategorie: ${quote.category}` })
+            .setFooter({ text: `Hinzugefügt von ${quote.added_by} | Kategorie: ${displayCategory}` })
             .setTimestamp(new Date(quote.timestamp));
 
         await interaction.reply({ embeds: [embed] });

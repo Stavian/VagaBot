@@ -3,13 +3,13 @@ const db = require('../database');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('roast')
+        .setName('fail')
         .setDescription('Hole einen Fail-Moment aus dem Archiv.')
         .addUserOption(option => 
-            option.setName('target')
+            option.setName('nutzer')
                 .setDescription('Spezifischen Nutzer roasten (optional)')),
     async execute(interaction) {
-        const target = interaction.options.getUser('target');
+        const target = interaction.options.getUser('nutzer');
         
         let quote;
         if (target) {
@@ -25,7 +25,7 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xFF0000)
-            .setTitle(`🔥 ROAST: ${quote.username}`)
+            .setTitle(`🔥 FAIL: ${quote.username}`)
             .setDescription(`"${quote.quote_text}"`)
             .setFooter({ text: `Erinnert von ${quote.added_by}` })
             .setTimestamp(new Date(quote.timestamp));

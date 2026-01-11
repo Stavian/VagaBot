@@ -21,7 +21,7 @@ for (const file of commandFiles) {
     if ('data' in command && 'execute' in command) {
         client.commands.set(command.data.name, command);
     } else {
-        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+        console.log(`[WARNUNG] Der Befehl in ${filePath} benötigt "data" oder "execute".`);
     }
 }
 
@@ -32,7 +32,7 @@ client.on(Events.InteractionCreate, async interaction => {
     const command = client.commands.get(interaction.commandName);
 
     if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
+        console.error(`Kein Befehl passend zu ${interaction.commandName} gefunden.`);
         return;
     }
 

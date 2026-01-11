@@ -3,10 +3,10 @@ const db = require('../database');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('remember')
+        .setName('merken')
         .setDescription('Speichere ein lustiges Zitat oder einen Moment.')
         .addUserOption(option => 
-            option.setName('user')
+            option.setName('nutzer')
                 .setDescription('Der Nutzer, der es gesagt hat')
                 .setRequired(true))
         .addStringOption(option => 
@@ -14,7 +14,7 @@ module.exports = {
                 .setDescription('Das Zitat an sich')
                 .setRequired(true))
         .addStringOption(option => 
-            option.setName('category')
+            option.setName('kategorie')
                 .setDescription('Kategorie des Zitats (z.B. Fail, Win)')
                 .addChoices(
                     { name: 'Allgemein', value: 'general' },
@@ -22,14 +22,21 @@ module.exports = {
                     { name: 'Win', value: 'win' }
                 )),
     async execute(interaction) {
-        const user = interaction.options.getUser('user');
+        const user = interaction.options.getUser('nutzer');
         const text = interaction.options.getString('text');
-        const category = interaction.options.getString('category') || 'general';
+        const category = interaction.options.getString('kategorie') || 'general';
         const addedBy = interaction.user.username;
+
+        const categoryNames = {
+            'general': 'Allgemein',
+            'fail': 'Fail',
+            'win': 'Win'
+        };
+        const categoryLabel = categoryNames[category] || category;
 
         try {
             db.addQuote(user.id, user.username, text, addedBy, category);
-            await interaction.reply(`Zitat für **${user.username}** gespeichert: "${text}" (${category})`);
+            await interaction.reply(`Zitat für **${user.username}** gespeichert: "${text}" (${categoryLabel})`);
         } catch (error) {
             console.error(error);
             await interaction.reply({ content: 'Fehler beim Speichern des Zitats.', ephemeral: true });
