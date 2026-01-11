@@ -5,23 +5,27 @@
 
 ## PHASE 1: CORE SETUP (Foundation)
 Objective: Get the bot running and responding to basic inputs.
-[ ] Choose Language: Python (discord.py) OR JavaScript (discord.js).
-[ ] Developer Portal: Create App, Create Bot User, Copy Token.
-[ ] Permissions: Generate invite link (Scope: bot, applications.commands).
+[x] Choose Language: Python (discord.py) OR JavaScript (discord.js).
+[x] Developer Portal: Create App, Create Bot User, Copy Token.
+[x] Permissions: Generate invite link (Scope: bot, applications.commands).
     - **Recommended Permissions:** View Channels, Send Messages, Embed Links, Read Message History, Manage Roles (for LFG features).
-[ ] Code Base: Set up main file (main.py/index.js) and config file (.env for Token).
-[ ] Database: specific a simple local database (SQLite) or JSON file to store data.
+[x] Code Base: Set up main file (main.py/index.js) and config file (.env for Token).
+[x] Database: specific a simple local database (SQLite) or JSON file to store data.
 
 ## PHASE 2: THE "INSIDE JOKE" DATABASE (Priority Feature)
 Objective: A system to save and recall funny moments.
-[ ] Database Schema: Table `quotes` (id, user_id, quote_text, timestamp, added_by).
-[ ] Command `/remember`:
-    - Inputs: @user, "text"
-    - Action: Save to DB.
-[ ] Command `/quote`:
+[x] Database Schema: Table `quotes` (id, user_id, quote_text, timestamp, added_by).
+[x] Command `/merken` (Enhanced):
+    - Inputs: @user, "text", tags, image attachment.
+    - Action: Save to DB with strict permission checks.
+[x] Command `/zitat`:
     - Logic: Pick a random row from DB and display in an Embed.
-[ ] Command `/roast`:
+[x] Command `/fail`:
     - Logic: Fetch a quote specifically tagged as a "fail" or from a specific target user.
+[x] **NEW:** Reaction Saving (💾): Save quotes by reacting to messages.
+[x] **NEW:** Leaderboards (`/ranking`): See top fails, most quoted users, and top contributors.
+[x] **NEW:** Search (`/suche`): Find quotes by keyword.
+[x] **NEW:** Tag Management (`/tags`, Permission-locked creation).
 
 ## PHASE 3: THE SQUAD ASSEMBLER (LFG)
 Objective: Gather players for specific games without spamming everyone.
