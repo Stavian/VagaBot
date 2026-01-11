@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, Events, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, Events, Partials, EmbedBuilder } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const db = require('./database'); // Import database
@@ -8,10 +8,11 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMessageReactions, // Needed for reaction listening
-        GatewayIntentBits.MessageContent, // Needed to read message content
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildPresences, // Needed for smart matchmaking
     ],
-    partials: [Partials.Message, Partials.Channel, Partials.Reaction], // Needed for uncached messages
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
 client.commands = new Collection();
@@ -29,25 +30,63 @@ for (const file of commandFiles) {
     }
 }
 
-// Command handler (Placeholder for now)
+// Command handler
 client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return;
 
-    const command = client.commands.get(interaction.commandName);
+        try {
+            await command.execute(interaction);
+        } catch (error) {
+            console.error(error);
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
+            } else {
+                await interaction.reply({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
+            }
+        }
+    } else if (interaction.isAutocomplete()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return;
 
-    if (!command) {
-        console.error(`Kein Befehl passend zu ${interaction.commandName} gefunden.`);
-        return;
-    }
+        try {
+            await command.autocomplete(interaction);
+        } catch (error) {
+            console.error(error);
+        }
+    } else if (interaction.isButton()) {
+        if (interaction.customId.startsWith('lfg_')) {
+            const [prefix, action, gameName] = interaction.customId.split('_');
+            const game = db.getGame(gameName);
+            if (!game) return interaction.reply({ content: 'Spiel-Konfiguration nicht gefunden.', ephemeral: true });
 
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(error);
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
-        } else {
-            await interaction.reply({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
+            const message = interaction.message;
+            const embed = EmbedBuilder.from(message.embeds[0]);
+            let playersString = embed.data.description.split('**Spieler')[1].split('):**\n')[1];
+            let players = playersString === '*Noch niemand dabei.*' ? [] : playersString.split('\n').map(p => p.trim());
+
+            const userTag = `<@${interaction.user.id}>`;
+
+            if (action === 'join') {
+                if (players.includes(userTag)) {
+                    return interaction.reply({ content: 'Du bist bereits in der Squad!', ephemeral: true });
+                }
+                if (players.length >= game.max_players) {
+                    return interaction.reply({ content: 'Die Squad ist leider schon voll!', ephemeral: true });
+                }
+                players.push(userTag);
+            } else if (action === 'leave') {
+                if (!players.includes(userTag)) {
+                    return interaction.reply({ content: 'Du bist gar nicht in der Squad!', ephemeral: true });
+                }
+                players = players.filter(p => p !== userTag);
+            }
+
+            const newPlayersString = players.length > 0 ? players.join('\n') : '*Noch niemand dabei.*';
+            embed.setDescription(`Geplant von **${message.interaction ? message.interaction.user.username : 'unbekannt'}**.\n\n**Spieler (${players.length}/${game.max_players}):**\n${newPlayersString}`);
+
+            await interaction.update({ embeds: [embed] });
         }
     }
 });

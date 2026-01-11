@@ -41,6 +41,26 @@ db.exec(`
     )
 `);
 
+db.exec(`
+    CREATE TABLE IF NOT EXISTS games (
+        name TEXT PRIMARY KEY,
+        max_players INTEGER DEFAULT 5
+    )
+`);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+        user_id TEXT NOT NULL,
+        game_name TEXT NOT NULL,
+        PRIMARY KEY (user_id, game_name),
+        FOREIGN KEY (game_name) REFERENCES games(name) ON DELETE CASCADE
+    )
+`);
+
+// Migration: Remove role_id if it exists (simplest way is to ignore for now or recreate, 
+// but since we are dev, we just ensure the new structure works for new entries. 
+// Ideally we would migrate data, but for this switch we'll just handle new structure).
+
 // Migration: Add image_url and tags columns if they don't exist
 try {
     db.exec("ALTER TABLE quotes ADD COLUMN image_url TEXT");
@@ -67,6 +87,42 @@ module.exports = {
         const stmt = db.prepare('SELECT value FROM config WHERE key = ?');
         const result = stmt.get(key);
         return result ? result.value : null;
+    },
+
+    // Game Management (LFG)
+    addGame: (name) => {
+        const stmt = db.prepare('INSERT OR REPLACE INTO games (name, max_players) VALUES (?, ?)');
+        return stmt.run(name, 0); // 0 = unlimited/dynamic
+    },
+    removeGame: (name) => {
+        const stmt = db.prepare('DELETE FROM games WHERE name = ?');
+        return stmt.run(name);
+    },
+    getGame: (name) => {
+        const stmt = db.prepare('SELECT * FROM games WHERE name = ?');
+        return stmt.get(name);
+    },
+    getAllGames: () => {
+        const stmt = db.prepare('SELECT * FROM games');
+        return stmt.all();
+    },
+
+    // Subscription Management
+    subscribe: (userId, gameName) => {
+        const stmt = db.prepare('INSERT OR IGNORE INTO subscriptions (user_id, game_name) VALUES (?, ?)');
+        return stmt.run(userId, gameName);
+    },
+    unsubscribe: (userId, gameName) => {
+        const stmt = db.prepare('DELETE FROM subscriptions WHERE user_id = ? AND game_name = ?');
+        return stmt.run(userId, gameName);
+    },
+    getSubscribers: (gameName) => {
+        const stmt = db.prepare('SELECT user_id FROM subscriptions WHERE game_name = ?');
+        return stmt.all(gameName).map(row => row.user_id);
+    },
+    getUserSubscriptions: (userId) => {
+        const stmt = db.prepare('SELECT game_name FROM subscriptions WHERE user_id = ?');
+        return stmt.all(userId).map(row => row.game_name);
     },
 
     // Tag Management
