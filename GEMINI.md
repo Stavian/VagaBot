@@ -340,6 +340,14 @@ Refer to `README.md` for the complete multi-phase roadmap.
 - Live server status for Ark, Minecraft, etc.
 - Player count and online/offline alerts
 
+**Video Clip Recording:**
+- Save gameplay clips via voice or text command (`/clip`)
+- Records last 30-60 seconds of gameplay
+- Integration with OBS, NVIDIA ShadowPlay, or AMD ReLive
+- Automatic upload to Discord or cloud storage
+- Voice activation support ("Hey Bot, save that!")
+- Clip gallery and metadata tagging
+
 **Additional Mini-Games:**
 - Coin flip and dice roll betting games
 

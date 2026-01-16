@@ -118,6 +118,18 @@ Objective: Add advanced automation, economy system, and enhanced community featu
     - Auto-refresh embed with current status
     - Alerts when server goes online/offline
 
+### Video Clip Recording
+[ ] **Voice/Text Command Video Clip** (`/clip` or voice command):
+    - Save video clip of recent gameplay moments
+    - Triggered by text command `/clip` or voice activation
+    - Records last 30-60 seconds of gameplay
+    - Integration with OBS, NVIDIA ShadowPlay, or AMD ReLive
+    - Automatic upload to Discord or cloud storage
+    - Optional: Tag clips with game, players involved, and context
+    - Command `/clip [duration] [description]` - Save clip with metadata
+    - Voice activation: "Hey Bot, save that!" or similar trigger phrase
+    - Clip gallery and playback via `/clips @user` or `/clips browse`
+
 ### Additional Mini-Games
 [ ] **Coin Flip** (`/coinflip [bet]`):
     - Simple heads/tails betting game
