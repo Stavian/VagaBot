@@ -130,7 +130,23 @@ async function getSteamEmbed(link) {
 
 async function getTrackerEmbed(link, game, platform, color) {
     const data = await trackerUtils.getProfile(game, platform, link.external_id);
-    if (!data) return null;
+
+    // Check if Tracker.gg API is unavailable (pending approval or error)
+    if (!data) {
+        const displayGame = game === 'bf6' ? 'Battlefield 6' :
+                           game === 'siege' ? 'Rainbow Six Siege' :
+                           game === 'for-honor' ? 'For Honor' :
+                           game === 'destiny-2' ? 'Destiny 2' :
+                           game === 'valorant' ? 'Valorant' : game.toUpperCase();
+
+        const embed = new EmbedBuilder()
+            .setColor('#ffa500')
+            .setTitle(`⏳ ${displayGame} Stats`)
+            .setDescription(`**Account:** ${link.external_id}\n\n⚠️ **Tracker.gg API-Zugriff steht noch aus.**\n\nDie Stats für ${displayGame} sind verfügbar, sobald die API-Genehmigung erteilt wurde.\n\n*Aktuelle Funktionen:*\n✅ Steam Stats verfügbar\n⏳ Competitive Stats (Tracker.gg) in Warteschlange`)
+            .setFooter({ text: 'Die API-Anfrage ist eingereicht und wird geprüft.' });
+
+        return embed;
+    }
 
     const displayGame = game === 'bf6' ? 'Battlefield 6' : game.toUpperCase();
 

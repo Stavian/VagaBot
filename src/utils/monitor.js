@@ -6,13 +6,29 @@ const CHECK_INTERVAL = 10 * 60 * 1000; // 10 Minutes
 
 async function startMonitoring(client) {
     console.log('[Monitor] Gaming-Monitor gestartet.');
-    
+
+    // Check if Tracker.gg API is available
+    if (!process.env.TRN_API_KEY) {
+        console.log('[Monitor] ⚠️ Tracker.gg API-Schlüssel fehlt. Match-Monitoring deaktiviert.');
+        return;
+    }
+
+    console.log('[Monitor] Tracker.gg API-Schlüssel gefunden. Match-Überwachung wird alle 10 Minuten ausgeführt.');
+
     setInterval(async () => {
         const logChannelId = db.getConfig('bot_log_channel_id');
-        if (!logChannelId) return;
+        if (!logChannelId) {
+            console.log('[Monitor] Kein bot_log_channel_id konfiguriert. Nutze /config log_channel.');
+            return;
+        }
 
         const channel = await client.channels.fetch(logChannelId).catch(() => null);
-        if (!channel) return;
+        if (!channel) {
+            console.log('[Monitor] Bot-Log-Channel nicht gefunden.');
+            return;
+        }
+
+        console.log('[Monitor] Starte Match-Check...');
 
         // Check each game and platform combination
         const checkList = [
@@ -41,25 +57,32 @@ async function checkPlatform(channel, game, platform, dbKey) {
     const links = db.getAllLinksForPlatform(dbKey);
 
     for (const link of links) {
-        const matches = await trackerUtils.getRecentMatches(game, platform, link.external_id);
-        if (!matches || matches.length === 0) continue;
+        try {
+            const matches = await trackerUtils.getRecentMatches(game, platform, link.external_id);
 
-        const latestMatch = matches[0];
-        const lastSeenMatchId = db.getLastMatch(link.user_id, link.platform);
+            // If API returns empty or null (e.g., 401 Unauthorized), skip silently
+            if (!matches || matches.length === 0) continue;
 
-        if (latestMatch.attributes.id !== lastSeenMatchId) {
-            db.setLastMatch(link.user_id, link.platform, latestMatch.attributes.id);
-            
-            const stats = latestMatch.segments[0].stats;
-            const kd = stats.kdRatio?.value || 0;
-            const kills = stats.kills?.value || 0;
-            const deaths = stats.deaths?.value || 0;
+            const latestMatch = matches[0];
+            const lastSeenMatchId = db.getLastMatch(link.user_id, link.platform);
 
-            if (kd < 0.5 && deaths > 5) {
-                await postMeme(channel, link.user_id, 'trash', kd, kills, deaths, game);
-            } else if (kd > 3.0 && kills > 10) {
-                await postMeme(channel, link.user_id, 'mvp', kd, kills, deaths, game);
+            if (latestMatch.attributes.id !== lastSeenMatchId) {
+                db.setLastMatch(link.user_id, link.platform, latestMatch.attributes.id);
+
+                const stats = latestMatch.segments[0].stats;
+                const kd = stats.kdRatio?.value || 0;
+                const kills = stats.kills?.value || 0;
+                const deaths = stats.deaths?.value || 0;
+
+                if (kd < 0.5 && deaths > 5) {
+                    await postMeme(channel, link.user_id, 'trash', kd, kills, deaths, game);
+                } else if (kd > 3.0 && kills > 10) {
+                    await postMeme(channel, link.user_id, 'mvp', kd, kills, deaths, game);
+                }
             }
+        } catch (error) {
+            // Silently skip errors (API pending approval will cause 401s)
+            console.log(`[Monitor] Überspringe ${game}/${platform} für ${link.external_id} (API möglicherweise nicht verfügbar)`);
         }
     }
 }
