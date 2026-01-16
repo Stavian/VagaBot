@@ -63,3 +63,73 @@ Objective: Keep the bot online 24/7.
 [ ] Hosting: Deploy to a VPS, Heroku, or a text Raspberry Pi.
 [ ] Logging: Create a private channel `#bot-logs` for errors.
 [ ] Status: Set Bot Status to "Watching the Squad".
+
+## PHASE 7: ADVANCED FEATURES & COMMUNITY ENGAGEMENT
+Objective: Add advanced automation, economy system, and enhanced community features.
+
+### News & Alerts
+[ ] **Patch News Feed** (`/patchnews`):
+    - Automatic feed for game updates (nur relevante Spiele)
+    - Fetches patch notes from official APIs/RSS feeds
+    - Filters for subscribed games only
+    - Posts to dedicated #patch-news channel
+    - Supported games: Valorant, R6 Siege, Battlefield, Destiny 2, etc.
+
+[ ] **Free Games Alert** (`/freegames`):
+    - Automatic notifications when games become free
+    - Monitors: Epic Games Store, Steam, Xbox Game Pass, PlayStation Plus
+    - Posts alerts to #free-games channel with claim links
+    - Optional: User subscriptions for specific platforms
+
+### Economy & Betting System
+[ ] **Currency System**:
+    - Coins earned through activity (messages, voice time, game participation)
+    - Daily rewards and streak bonuses
+    - Command `/balance` - Check your coin balance
+    - Command `/daily` - Claim daily reward
+    - Command `/leaderboard coins` - Top coin holders
+
+[ ] **Betting System** (`/wette`):
+    - Place bets on match outcomes (squad vs. squad)
+    - Bet on individual player performance (K/D predictions)
+    - Command `/wette erstellen` - Create a bet (match outcome, K/D threshold)
+    - Command `/wette platzieren` - Place coins on a bet
+    - Command `/wette liste` - View active bets
+    - Automatic payout based on `/stats` API data
+    - Integration with automated monitoring system
+
+### Enhanced Quote System
+[ ] **Voice Chat Quote Book** (`/voice-zitat`):
+    - Save quotes from voice chat conversations
+    - Manual entry: `/voice-zitat @user "quote text"`
+    - Timestamp and voice channel recorded
+    - Separate leaderboard for voice quotes
+    - Integration with existing quote ranking system
+
+### Server Monitoring
+[ ] **Game Server Status** (`/serverstatus`):
+    - Live status display for community servers
+    - Supported: Ark, Minecraft, Rust, etc.
+    - Shows: Online/Offline, Player count, Server version
+    - Command `/serverstatus ark` - Check Ark server
+    - Command `/serverstatus minecraft` - Check Minecraft server
+    - Auto-refresh embed with current status
+    - Alerts when server goes online/offline
+
+### Additional Mini-Games
+[ ] **Coin Flip** (`/coinflip [bet]`):
+    - Simple heads/tails betting game
+    - Bet coins on outcome
+
+[ ] **Dice Roll** (`/roll [sides] [bet]`):
+    - Roll dice and bet on outcomes
+    - Supports various dice types (d6, d20, etc.)
+
+---
+
+## FUTURE ENHANCEMENTS (Backlog)
+- Integration with Discord Activity API
+- Voice channel activity rewards
+- Tournament bracket system
+- Custom role rewards for achievements
+- Seasonal events and limited-time challenges

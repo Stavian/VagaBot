@@ -319,6 +319,29 @@ Refer to `README.md` for the complete multi-phase roadmap.
 - ✅ **Phase 4:** Steam integration working, Tracker.gg pending approval
 - ✅ **Phase 5:** All utility features complete
 - ⏳ **Phase 6:** Deployment (ready to begin)
+- 📋 **Phase 7:** Advanced features planned (see below)
+
+### Planned Phase 7 Features
+
+**News & Alerts:**
+- Automatic patch news feed for subscribed games
+- Free games alerts (Epic, Steam, Xbox, PlayStation)
+
+**Economy & Betting:**
+- Coin currency system (earned through activity)
+- Betting system for match outcomes and player performance
+- Daily rewards and leaderboards
+
+**Enhanced Quotes:**
+- Voice chat quote book (`/voice-zitat`)
+- Separate voice quote rankings
+
+**Server Monitoring:**
+- Live server status for Ark, Minecraft, etc.
+- Player count and online/offline alerts
+
+**Additional Mini-Games:**
+- Coin flip and dice roll betting games
 
 ---
 
