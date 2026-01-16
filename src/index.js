@@ -170,10 +170,10 @@ client.once(Events.ClientReady, c => {
 
     // Set bot status
     c.user.setPresence({
-        activities: [{ name: 'das Geschehen', type: 3 }], // Type 3 = Watching
+        activities: [{ name: 'Passt auf!', type: 3 }], // Type 3 = Watching
         status: 'online'
     });
-    console.log('[Status] Bot status set to "Watching das Geschehen"');
+    console.log('[Status] Bot status set to "Passt auf!"');
 
     startMonitoring(c);
 });
