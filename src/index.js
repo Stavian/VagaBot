@@ -41,6 +41,8 @@ client.on(Events.InteractionCreate, async interaction => {
             await command.execute(interaction);
         } catch (error) {
             console.error(error);
+            logErrorToDiscord(error, `Command: /${interaction.commandName} by ${interaction.user.tag}`);
+
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
             } else {
@@ -142,9 +144,64 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     }
 });
 
+// Global error handler - logs to Discord channel
+async function logErrorToDiscord(error, context = '') {
+    try {
+        const logChannelId = db.getConfig('bot_log_channel_id');
+        if (!logChannelId || !client.isReady()) return;
+
+        const channel = await client.channels.fetch(logChannelId).catch(() => null);
+        if (!channel) return;
+
+        const embed = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle('🚨 Bot Error')
+            .setDescription(`**Context:** ${context || 'Unknown'}\n\`\`\`${error.stack || error.message || error}\`\`\``)
+            .setTimestamp();
+
+        await channel.send({ embeds: [embed] });
+    } catch (err) {
+        console.error('[Error Logger] Failed to log to Discord:', err);
+    }
+}
+
 client.once(Events.ClientReady, c => {
     console.log(`Bereit! Eingeloggt als ${c.user.tag}`);
+
+    // Set bot status
+    c.user.setPresence({
+        activities: [{ name: 'Watching the Squad', type: 3 }], // Type 3 = Watching
+        status: 'online'
+    });
+    console.log('[Status] Bot status set to "Watching the Squad"');
+
     startMonitoring(c);
+});
+
+// Handle uncaught errors
+process.on('unhandledRejection', (error) => {
+    console.error('[Unhandled Rejection]', error);
+    logErrorToDiscord(error, 'Unhandled Promise Rejection');
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('[Uncaught Exception]', error);
+    logErrorToDiscord(error, 'Uncaught Exception');
+    // Give time to log before exiting
+    setTimeout(() => process.exit(1), 1000);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    console.log('[Shutdown] Received SIGINT, shutting down gracefully...');
+    client.destroy();
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('[Shutdown] Received SIGTERM, shutting down gracefully...');
+    client.destroy();
+    process.exit(0);
 });
 
 client.login(process.env.DISCORD_TOKEN);
