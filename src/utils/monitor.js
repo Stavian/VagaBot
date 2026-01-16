@@ -98,12 +98,12 @@ async function postMeme(channel, userId, type, kd, kills, deaths, game) {
 
     if (type === 'trash') {
         embed.setColor('#ff0000')
-            .setTitle('🗑️ TRASH DETECTED')
+            .setTitle('🗑️ SCHROTT ERKANNT')
             .setDescription(`${user} hat gerade absolut reingeschissen in **${gameDisplay}**.\n\n**K/D:** ${kd.toFixed(2)} (${kills}/${deaths})\n\n"Geh doch lieber Farm Simulator spielen..."`)
             .setImage('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z6eXN6eHpwZHg4eHpwZHg4eHpwZHg4eHpwZHg4eHpwZHg4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/2w6IDqKQbakM0/giphy.gif');
     } else {
         embed.setColor('#00ff00')
-            .setTitle('🔥 MVP ALERT')
+            .setTitle('🔥 MVP-ALARM')
             .setDescription(`${user} hat gerade rasiert in **${gameDisplay}**!\n\n**K/D:** ${kd.toFixed(2)} (${kills}/${deaths})\n\n"Der Junge hat Aim-Bot an!"`)
             .setImage('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z6eXN6eHpwZHg4eHpwZHg4eHpwZHg4eHpwZHg4eHpwZHg4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l41lTjJp9N6z6z5G8/giphy.gif');
     }

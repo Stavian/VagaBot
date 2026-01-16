@@ -24,11 +24,11 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xFFD700)
-            .setTitle('🏆 VagaBot Leaderboards')
+            .setTitle('🏆 VagaBot Bestenlisten')
             .setDescription('Hier ist die ungeschminkte Wahrheit.')
             .addFields(
                 { name: '🔥 Hall of Shame (Meiste Fails)', value: formatList(topFails, 'Fails'), inline: true },
-                { name: '📢 Meist Zitiert', value: formatList(mostQuoted, 'Zitate'), inline: true },
+                { name: '📢 Meist zitiert', value: formatList(mostQuoted, 'Zitate'), inline: true },
                 { name: '🕵️ Top Snitch (Meiste Beiträge)', value: formatList(topSnitch, 'Einträge'), inline: false }
             )
             .setTimestamp();

@@ -59,7 +59,7 @@ module.exports = {
             if (subs.length === 0) {
                 return interaction.reply({ content: 'Du hast aktuell keine Spiele abonniert.', ephemeral: true });
             }
-            await interaction.reply({ content: `Dein Abo-Feed: **${subs.join(', ')}**`, ephemeral: true });
+            await interaction.reply({ content: `Deine Abos: **${subs.join(', ')}**`, ephemeral: true });
         }
     },
 };

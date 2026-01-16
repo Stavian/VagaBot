@@ -62,7 +62,7 @@ client.on(Events.InteractionCreate, async interaction => {
         if (interaction.customId.startsWith('lfg_')) {
             const [prefix, action, gameName] = interaction.customId.split('_');
             const game = db.getGame(gameName);
-            if (!game) return interaction.reply({ content: 'Spiel-Konfiguration nicht gefunden.', ephemeral: true });
+            if (!game) return interaction.reply({ content: 'Spielkonfiguration nicht gefunden.', ephemeral: true });
 
             const message = interaction.message;
             const embed = EmbedBuilder.from(message.embeds[0]);
@@ -101,7 +101,7 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
         try {
             await reaction.fetch();
         } catch (error) {
-            console.error('Something went wrong when fetching the message:', error);
+            console.error('Etwas ging schief beim Abrufen der Nachricht:', error);
             return;
         }
     }
@@ -155,8 +155,8 @@ async function logErrorToDiscord(error, context = '') {
 
         const embed = new EmbedBuilder()
             .setColor('#ff0000')
-            .setTitle('🚨 Bot Error')
-            .setDescription(`**Context:** ${context || 'Unknown'}\n\`\`\`${error.stack || error.message || error}\`\`\``)
+            .setTitle('🚨 Bot-Fehler')
+            .setDescription(`**Kontext:** ${context || 'Unbekannt'}\n\`\`\`${error.stack || error.message || error}\`\`\``)
             .setTimestamp();
 
         await channel.send({ embeds: [embed] });
@@ -170,10 +170,10 @@ client.once(Events.ClientReady, c => {
 
     // Set bot status
     c.user.setPresence({
-        activities: [{ name: 'Watching the Squad', type: 3 }], // Type 3 = Watching
+        activities: [{ name: 'das Geschehen', type: 3 }], // Type 3 = Watching
         status: 'online'
     });
-    console.log('[Status] Bot status set to "Watching the Squad"');
+    console.log('[Status] Bot status set to "Watching das Geschehen"');
 
     startMonitoring(c);
 });

@@ -141,8 +141,8 @@ async function getTrackerEmbed(link, game, platform, color) {
 
         const embed = new EmbedBuilder()
             .setColor('#ffa500')
-            .setTitle(`⏳ ${displayGame} Stats`)
-            .setDescription(`**Account:** ${link.external_id}\n\n⚠️ **Tracker.gg API-Zugriff steht noch aus.**\n\nDie Stats für ${displayGame} sind verfügbar, sobald die API-Genehmigung erteilt wurde.\n\n*Aktuelle Funktionen:*\n✅ Steam Stats verfügbar\n⏳ Competitive Stats (Tracker.gg) in Warteschlange`)
+            .setTitle(`⏳ ${displayGame} Statistiken`)
+            .setDescription(`**Account:** ${link.external_id}\n\n⚠️ **Tracker.gg API-Zugriff steht noch aus.**\n\nDie Statistiken für ${displayGame} sind verfügbar, sobald die API-Genehmigung erteilt wurde.\n\n*Aktuelle Funktionen:*\n✅ Steam-Statistiken verfügbar\n⏳ Competitive-Statistiken (Tracker.gg) in Warteschlange`)
             .setFooter({ text: 'Die API-Anfrage ist eingereicht und wird geprüft.' });
 
         return embed;

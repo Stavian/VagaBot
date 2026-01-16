@@ -32,7 +32,7 @@ module.exports = {
             .setColor(0x0099FF)
             .setTitle(`🔎 Fundstück: ${quote.username}`)
             .setDescription(`"${quote.quote_text}"`)
-            .setFooter({ text: `ID: ${quote.id} | Treffer 1 von ${count} für "${keyword}" | Hinzugefügt von ${quote.added_by}` })
+            .setFooter({ text: `ID: ${quote.id} | Treffer 1 von ${count} Treffern für "${keyword}" | Hinzugefügt von ${quote.added_by}` })
             .setTimestamp(new Date(quote.timestamp));
 
         if (quote.image_url) {
