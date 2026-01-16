@@ -60,9 +60,11 @@ Objective: Tools for scheduling and queue-time fun.
 
 ## PHASE 6: DEPLOYMENT
 Objective: Keep the bot online 24/7.
-[ ] Hosting: Deploy to a VPS, Heroku, or a text Raspberry Pi.
-[ ] Logging: Create a private channel `#bot-logs` for errors.
-[ ] Status: Set Bot Status to "Watching the Squad".
+[x] Hosting: Local PC/Raspberry Pi with PM2 process manager.
+[x] Logging: Discord error logging to `#bot-logs` channel + file logs.
+[x] Status: Bot Status set to "Watching the Squad".
+[x] Auto-restart: PM2 configured with crash recovery and memory limits.
+[x] Boot persistence: Windows startup service configured.
 
 ## PHASE 7: ADVANCED FEATURES & COMMUNITY ENGAGEMENT
 Objective: Add advanced automation, economy system, and enhanced community features.
