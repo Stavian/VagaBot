@@ -16,15 +16,15 @@ async function startMonitoring(client) {
     console.log('[Monitor] Tracker.gg API-Schlüssel gefunden. Match-Überwachung wird alle 10 Minuten ausgeführt.');
 
     setInterval(async () => {
-        const logChannelId = db.getConfig('bot_log_channel_id');
-        if (!logChannelId) {
-            console.log('[Monitor] Kein bot_log_channel_id konfiguriert. Nutze /config log_channel.');
+        const wettChannelId = db.getConfig('wett_channel_id');
+        if (!wettChannelId) {
+            console.log('[Monitor] Kein wett_channel_id konfiguriert. Nutze /config wett_channel.');
             return;
         }
 
-        const channel = await client.channels.fetch(logChannelId).catch(() => null);
+        const channel = await client.channels.fetch(wettChannelId).catch(() => null);
         if (!channel) {
-            console.log('[Monitor] Bot-Log-Channel nicht gefunden.');
+            console.log('[Monitor] Wett-Channel nicht gefunden.');
             return;
         }
 

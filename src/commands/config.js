@@ -17,8 +17,16 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('log_channel')
-                .setDescription('Setze den Kanal für Gaming-Stats und Roasts.')
-                .addChannelOption(option => 
+                .setDescription('Setze den Kanal für Bot-Logs und Fehler.')
+                .addChannelOption(option =>
+                    option.setName('kanal')
+                        .setDescription('Der Zielkanal')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('wett_channel')
+                .setDescription('Setze den Kanal für Wetten, Gaming-Stats und Memes.')
+                .addChannelOption(option =>
                     option.setName('kanal')
                         .setDescription('Der Zielkanal')
                         .setRequired(true)))
@@ -95,7 +103,11 @@ module.exports = {
         } else if (subcommand === 'log_channel') {
             const channel = interaction.options.getChannel('kanal');
             db.setConfig('bot_log_channel_id', channel.id);
-            await interaction.reply({ content: `✅ Kanal ${channel} wurde als Log-Kanal für Gaming-Stats festgelegt.`, ephemeral: true });
+            await interaction.reply({ content: `✅ Kanal ${channel} wurde als Bot-Log-Kanal festgelegt.`, ephemeral: true });
+        } else if (subcommand === 'wett_channel') {
+            const channel = interaction.options.getChannel('kanal');
+            db.setConfig('wett_channel_id', channel.id);
+            await interaction.reply({ content: `✅ Kanal ${channel} wurde als Wett-Channel festgelegt (Wetten, Stats, Memes).`, ephemeral: true });
         } else if (subcommand === 'add_game') {
             const name = interaction.options.getString('name');
             
