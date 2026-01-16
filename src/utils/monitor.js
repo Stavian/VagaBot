@@ -74,6 +74,9 @@ async function checkPlatform(channel, game, platform, dbKey) {
                 const kills = stats.kills?.value || 0;
                 const deaths = stats.deaths?.value || 0;
 
+                // Check for K/D bets
+                await checkAndResolveBets(channel, link.user_id, kd, game);
+
                 if (kd < 0.5 && deaths > 5) {
                     await postMeme(channel, link.user_id, 'trash', kd, kills, deaths, game);
                 } else if (kd > 3.0 && kills > 10) {
@@ -109,6 +112,60 @@ async function postMeme(channel, userId, type, kd, kills, deaths, game) {
     }
 
     await channel.send({ content: user, embeds: [embed] });
+}
+
+async function checkAndResolveBets(channel, userId, kd, game) {
+    // Get all active K/D prediction bets for this user
+    const activeBets = db.getActiveBets();
+    const userBets = activeBets.filter(bet =>
+        bet.bet_type === 'kd_prediction' &&
+        bet.target_user_id === userId &&
+        !bet.resolved
+    );
+
+    for (const bet of userBets) {
+        // Check if bet has a closing time and if it's passed
+        if (bet.closes_at) {
+            const now = new Date();
+            const closesAt = new Date(bet.closes_at);
+            if (now < closesAt) continue; // Bet not closed yet
+        }
+
+        // Resolve bet based on K/D
+        const targetValue = bet.target_value;
+        let winningOption = null;
+
+        if (kd >= targetValue) {
+            winningOption = 'yes'; // Over
+        } else {
+            winningOption = 'no'; // Under
+        }
+
+        const result = db.resolveBet(bet.id, winningOption);
+
+        if (result.success) {
+            const gameDisplay = game === 'siege' ? 'Rainbow Six' :
+                                game === 'bf6' ? 'Battlefield 6' :
+                                game === 'for-honor' ? 'For Honor' :
+                                game === 'destiny-2' ? 'Destiny 2' : game;
+
+            const embed = new EmbedBuilder()
+                .setColor('#FFD700')
+                .setTitle('🎲 Wette automatisch aufgelöst!')
+                .setDescription(`**${bet.title}**\n\nDie Wette wurde basierend auf dem neuesten Match von <@${userId}> aufgelöst.`)
+                .addFields(
+                    { name: '🎮 Spiel', value: gameDisplay, inline: true },
+                    { name: '📊 K/D erreicht', value: `${kd.toFixed(2)}`, inline: true },
+                    { name: '🎯 Zielwert', value: `${targetValue}`, inline: true },
+                    { name: '🏆 Gewinner-Option', value: winningOption === 'yes' ? '✅ Über' : '❌ Unter', inline: true },
+                    { name: '👥 Gewinner', value: `${result.winners}`, inline: true },
+                    { name: '💰 Ausgezahlter Pool', value: `${result.pool.toLocaleString('de-DE')} Coins`, inline: true }
+                )
+                .setTimestamp();
+
+            await channel.send({ embeds: [embed] });
+        }
+    }
 }
 
 module.exports = { startMonitoring };

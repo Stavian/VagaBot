@@ -77,6 +77,59 @@ db.exec(`
     )
 `);
 
+// Economy System Tables
+db.exec(`
+    CREATE TABLE IF NOT EXISTS user_coins (
+        user_id TEXT PRIMARY KEY,
+        coins INTEGER DEFAULT 0,
+        total_earned INTEGER DEFAULT 0,
+        last_daily DATETIME,
+        daily_streak INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS coin_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        reason TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS bets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        creator_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        bet_type TEXT NOT NULL,
+        target_user_id TEXT,
+        target_value REAL,
+        match_id TEXT,
+        closes_at DATETIME,
+        resolved BOOLEAN DEFAULT 0,
+        winning_option TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS bet_placements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bet_id INTEGER NOT NULL,
+        user_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        choice TEXT NOT NULL,
+        placed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (bet_id) REFERENCES bets(id) ON DELETE CASCADE,
+        UNIQUE (bet_id, user_id)
+    )
+`);
+
 // Migration: Remove role_id if it exists (simplest way is to ignore for now or recreate, 
 // but since we are dev, we just ensure the new structure works for new entries. 
 // Ideally we would migrate data, but for this switch we'll just handle new structure).
@@ -284,5 +337,156 @@ module.exports = {
     searchQuotes: (keyword) => {
         const stmt = db.prepare('SELECT * FROM quotes WHERE quote_text LIKE ? ORDER BY RANDOM()');
         return stmt.all(`%${keyword}%`);
+    },
+
+    // Economy System
+    getUserCoins: (userId) => {
+        const stmt = db.prepare('SELECT * FROM user_coins WHERE user_id = ?');
+        let user = stmt.get(userId);
+        if (!user) {
+            // Create user with starting coins
+            const insertStmt = db.prepare('INSERT INTO user_coins (user_id, coins, total_earned) VALUES (?, ?, ?)');
+            insertStmt.run(userId, 100, 100); // Start with 100 coins
+            user = { user_id: userId, coins: 100, total_earned: 100, last_daily: null, daily_streak: 0 };
+        }
+        return user;
+    },
+    addCoins: (userId, amount, type, reason) => {
+        const user = module.exports.getUserCoins(userId);
+        const newBalance = user.coins + amount;
+        const newTotal = user.total_earned + (amount > 0 ? amount : 0);
+
+        const updateStmt = db.prepare('UPDATE user_coins SET coins = ?, total_earned = ? WHERE user_id = ?');
+        updateStmt.run(newBalance, newTotal, userId);
+
+        const logStmt = db.prepare('INSERT INTO coin_transactions (user_id, amount, type, reason) VALUES (?, ?, ?, ?)');
+        logStmt.run(userId, amount, type, reason);
+
+        return newBalance;
+    },
+    claimDaily: (userId) => {
+        const user = module.exports.getUserCoins(userId);
+        const now = new Date();
+
+        // Check if already claimed today
+        if (user.last_daily) {
+            const lastClaim = new Date(user.last_daily);
+            const hoursSince = (now - lastClaim) / (1000 * 60 * 60);
+            if (hoursSince < 24) {
+                return { success: false, hoursLeft: Math.ceil(24 - hoursSince) };
+            }
+
+            // Check streak
+            const daysSince = (now - lastClaim) / (1000 * 60 * 60 * 24);
+            const newStreak = daysSince <= 1.5 ? user.daily_streak + 1 : 1; // 1.5 days grace period
+
+            const baseReward = 50;
+            const streakBonus = Math.min(newStreak * 10, 100); // Max +100 bonus
+            const totalReward = baseReward + streakBonus;
+
+            const updateStmt = db.prepare('UPDATE user_coins SET coins = coins + ?, total_earned = total_earned + ?, last_daily = ?, daily_streak = ? WHERE user_id = ?');
+            updateStmt.run(totalReward, totalReward, now.toISOString(), newStreak, userId);
+
+            const logStmt = db.prepare('INSERT INTO coin_transactions (user_id, amount, type, reason) VALUES (?, ?, ?, ?)');
+            logStmt.run(userId, totalReward, 'daily', `Tägliche Belohnung (Streak: ${newStreak})`);
+
+            return { success: true, amount: totalReward, streak: newStreak, bonus: streakBonus };
+        } else {
+            // First daily claim
+            const reward = 50;
+            const updateStmt = db.prepare('UPDATE user_coins SET coins = coins + ?, total_earned = total_earned + ?, last_daily = ?, daily_streak = 1 WHERE user_id = ?');
+            updateStmt.run(reward, reward, now.toISOString(), userId);
+
+            const logStmt = db.prepare('INSERT INTO coin_transactions (user_id, amount, type, reason) VALUES (?, ?, ?, ?)');
+            logStmt.run(userId, reward, 'daily', 'Erste tägliche Belohnung');
+
+            return { success: true, amount: reward, streak: 1, bonus: 0 };
+        }
+    },
+    getTopCoinHolders: () => {
+        const stmt = db.prepare('SELECT user_id, coins FROM user_coins ORDER BY coins DESC LIMIT 10');
+        return stmt.all();
+    },
+    getTopCoinEarners: () => {
+        const stmt = db.prepare('SELECT user_id, total_earned FROM user_coins ORDER BY total_earned DESC LIMIT 10');
+        return stmt.all();
+    },
+
+    // Betting System
+    createBet: (creatorId, title, description, betType, targetUserId = null, targetValue = null, closesAt = null) => {
+        const stmt = db.prepare('INSERT INTO bets (creator_id, title, description, bet_type, target_user_id, target_value, closes_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        return stmt.run(creatorId, title, description, betType, targetUserId, targetValue, closesAt);
+    },
+    placeBet: (betId, userId, amount, choice) => {
+        // Check if bet exists and is open
+        const betStmt = db.prepare('SELECT * FROM bets WHERE id = ? AND resolved = 0');
+        const bet = betStmt.get(betId);
+        if (!bet) return { success: false, error: 'Wette nicht gefunden oder bereits beendet' };
+
+        // Check if closes_at has passed
+        if (bet.closes_at) {
+            const now = new Date();
+            const closesAt = new Date(bet.closes_at);
+            if (now > closesAt) {
+                return { success: false, error: 'Wette ist bereits geschlossen' };
+            }
+        }
+
+        // Check user has enough coins
+        const user = module.exports.getUserCoins(userId);
+        if (user.coins < amount) return { success: false, error: 'Nicht genug Coins' };
+
+        // Check if user already placed a bet
+        const existingStmt = db.prepare('SELECT * FROM bet_placements WHERE bet_id = ? AND user_id = ?');
+        const existing = existingStmt.get(betId, userId);
+        if (existing) return { success: false, error: 'Du hast bereits auf diese Wette gesetzt' };
+
+        // Deduct coins
+        module.exports.addCoins(userId, -amount, 'bet', `Wette gesetzt: ${bet.title}`);
+
+        // Place bet
+        const placeStmt = db.prepare('INSERT INTO bet_placements (bet_id, user_id, amount, choice) VALUES (?, ?, ?, ?)');
+        placeStmt.run(betId, userId, amount, choice);
+
+        return { success: true };
+    },
+    getActiveBets: () => {
+        const stmt = db.prepare('SELECT * FROM bets WHERE resolved = 0 ORDER BY created_at DESC');
+        return stmt.all();
+    },
+    getBetById: (betId) => {
+        const stmt = db.prepare('SELECT * FROM bets WHERE id = ?');
+        return stmt.get(betId);
+    },
+    getBetPlacements: (betId) => {
+        const stmt = db.prepare('SELECT * FROM bet_placements WHERE bet_id = ?');
+        return stmt.all(betId);
+    },
+    resolveBet: (betId, winningOption) => {
+        const bet = module.exports.getBetById(betId);
+        if (!bet || bet.resolved) return { success: false, error: 'Wette nicht gefunden oder bereits beendet' };
+
+        // Mark bet as resolved
+        const updateBetStmt = db.prepare('UPDATE bets SET resolved = 1, winning_option = ? WHERE id = ?');
+        updateBetStmt.run(winningOption, betId);
+
+        // Get all placements
+        const placements = module.exports.getBetPlacements(betId);
+        const winners = placements.filter(p => p.choice === winningOption);
+        const losers = placements.filter(p => p.choice !== winningOption);
+
+        const totalPool = placements.reduce((sum, p) => sum + p.amount, 0);
+        const winnerPool = winners.reduce((sum, p) => sum + p.amount, 0);
+
+        // Distribute winnings
+        if (winnerPool > 0) {
+            for (const winner of winners) {
+                const share = (winner.amount / winnerPool) * totalPool;
+                const winnings = Math.floor(share);
+                module.exports.addCoins(winner.user_id, winnings, 'bet_win', `Wette gewonnen: ${bet.title}`);
+            }
+        }
+
+        return { success: true, winners: winners.length, losers: losers.length, pool: totalPool };
     }
 };
