@@ -1,7 +1,7 @@
 # VagaBot - Complete Documentation
 
 **Last Updated:** 2026-01-18
-**Version:** 2.0.0
+**Version:** 2.3.0 - PvP Edition
 **Language:** German (Deutsch)
 
 ---
@@ -21,6 +21,7 @@
    - [Economy & Betting](#economy--betting)
    - [Squad Assembly (LFG)](#squad-assembly-lfg)
    - [Utilities & Mini-Games](#utilities--mini-games)
+   - [Interactive Info System](#interactive-info-system)
 7. [Commands Reference](#commands-reference)
 8. [Database Schema](#database-schema)
 9. [API Integration](#api-integration)
@@ -38,6 +39,7 @@
 
 - **Quote System** - Save and share memorable text and voice chat moments
 - **Voice Audio Recording** - Automatically capture the last 30 seconds of audio
+- **Interactive Help Menu** - Button-based navigation for exploring features ✨NEW
 - **Gaming Stats** - Track player performance across multiple games
 - **Economy & Betting** - Coin system with match outcome predictions
 - **Squad Assembly** - Smart LFG (Looking For Group) system
@@ -47,7 +49,7 @@
 ## Tech Stack
 
 - **Runtime:** Node.js
-- **Framework:** discord.js v14
+- **Framework:** discord.js v14 (upgraded from v13)
 - **Database:** SQLite (better-sqlite3)
 - **Voice:** @discordjs/voice, FFmpeg
 - **External APIs:** Steam API, Tracker.gg API, Arc Raiders API
@@ -120,9 +122,11 @@
 ### Video Clip Recording
 - [ ] Voice/Text Command Video Clip (`/clip`)
 
-### Additional Mini-Games
-- [ ] Coin Flip (`/coinflip`)
-- [ ] Dice Roll (`/roll`)
+### Additional Mini-Games ✅
+- [x] Coin Flip (`/coinflip`)
+- [x] Dice Roll (`/roll`)
+- [x] High-Low (`/highlow`)
+- [x] Lottery System (`/lottery`)
 
 ---
 
@@ -747,22 +751,221 @@ Create polls for gaming sessions:
 
 ### Russian Roulette
 
-Try your luck:
+Try your luck - Solo or intense PvP battle royale!
 
+**Solo Mode (Free):**
 ```
-/roulette
+/roulette solo
+```
+- Classic Russian Roulette
+- 1/6 chance of 60s timeout
+- No coins involved
+- Just for fun!
+
+**PvP Mode (Battle Royale):**
+```
+/roulette start einsatz:100 max_spieler:4
+```
+- 2-6 players compete
+- Everyone bets same amount
+- Players take turns shooting
+- Get hit = 60s timeout + lose bet
+- Last survivor wins entire pot!
+
+**PvP Mechanics:**
+- Host creates game with bet amount
+- Players join via button (60s to join)
+- Game auto-starts when full or manually
+- True 1/6 chance per shot
+- Losers get timed out AND lose coins
+- Winner takes all
+
+**Example Flow:**
+```
+3 Players × 100 Coins = 300 Coin Pot
+Round 1: Player1 survives
+Round 2: Player2 gets shot (timeout + loses 100)
+Round 3: Player3 survives
+Round 4: Player1 gets shot (timeout + loses 100)
+Winner: Player3 gets +300 coins!
+```
+
+**Features:**
+- Interactive join/start/cancel buttons
+- Live player count & pot display
+- Detailed shot-by-shot results
+- Most intense minigame!
+
+### Coin Flip
+
+Flip a coin and bet on the outcome - Solo or PvP!
+
+**Solo Mode:**
+```
+/coinflip seite:kopf einsatz:50
+```
+
+**PvP Mode:**
+```
+/coinflip seite:kopf einsatz:100 gegner:@Player
 ```
 
 **Mechanics:**
-- 1/6 chance of timeout
-- 60-second timeout on loss
-- Harmless fun
+- Choose Kopf (heads) or Zahl (tails)
+- Solo: 50/50 chance to win, 2x payout
+- PvP: Challenge a player, opponent gets opposite side
+- Winner takes both bets (total pot)
+- Loser loses their bet
+
+**PvP Features:**
+- Challenge any player with @ mention
+- Opponent must accept or decline (60s timeout)
+- Both players must have enough coins
+- Fair 50/50 coinflip
+- Winner takes all
+
+### Dice Roll
+
+Roll dice with multiple game modes - Solo or PvP!
+
+**Solo Mode:**
+```
+/roll einsatz:50
+/roll einsatz:100 modus:high
+/roll einsatz:200 modus:jackpot
+```
+
+**PvP Mode:**
+```
+/roll einsatz:100 modus:standard gegner:@Player
+/roll einsatz:200 modus:jackpot gegner:@Player
+```
+
+**Game Modes:**
+
+**Standard (2 Würfel):**
+- Solo: You vs Bot, higher roll wins (2x payout)
+- PvP: Both roll 2 dice, higher wins (winner takes pot)
+- Tie = refund in PvP, 1x bet in solo
+
+**High Roll (1 Würfel):**
+- Solo: Roll >3 to win (1.8x payout)
+- PvP: Highest single die wins
+- Tie = refund in PvP
+
+**Jackpot (3 Würfel):**
+- Solo: All 3 dice match = 10x payout!
+- PvP: First to get 3 matching wins
+- Both jackpot = tie (refund)
+- Neither jackpot = tie (refund)
+
+**PvP Features:**
+- Challenge with @ mention
+- Works with all 3 game modes
+- Winner takes entire pot
+- Ties refund both players
+
+### High-Low
+
+Guess if the next number will be higher or lower:
+
+```
+/highlow einsatz:100
+```
+
+**Mechanics:**
+- Start with a random number (1-100)
+- Guess if next number is higher or lower
+- Each correct guess increases multiplier by 0.5x
+- 5 rounds maximum
+- Cash out anytime after round 1
+- Complete all 5 rounds for maximum payout
+
+**Features:**
+- Interactive button-based gameplay
+- Risk vs reward decision making
+- Progressive multiplier system
+- Cash out option for strategic play
+- Works with 1 to infinity players (each player has own game)
+
+**Example:**
+- Round 1: 1.5x multiplier
+- Round 2: 2.0x multiplier
+- Round 3: 2.5x multiplier
+- Round 4: 3.0x multiplier
+- Round 5: 3.5x multiplier
+
+### Lottery System
+
+Server-wide lottery with jackpot:
+
+```
+/lottery teilnehmen anzahl:1
+/lottery status
+/lottery ziehen anzahl_gewinner:3 (Admin only)
+/lottery reset (Admin only)
+```
+
+**Mechanics:**
+- Tickets cost 10 coins each
+- Buy 1-10 tickets per purchase
+- More tickets = higher win chance
+- Server-wide jackpot pool
+- Jackpot = total tickets × 10 coins
+- Admin can draw 1-5 winners
+
+**Prize Distribution:**
+- 1 Winner: 100% of jackpot
+- 2 Winners: 50% / 30%
+- 3 Winners: 50% / 30% / 20%
+- 4 Winners: 50% / 30% / 15% / 5%
+- 5 Winners: 50% / 30% / 15% / 4% / 1%
+
+**Features:**
+- Passive gameplay (buy and wait)
+- Community-driven jackpot
+- Fair odds based on tickets
+- Admin controls for drawing
+- Refund system if reset
+- Works with 1 to infinity players
+
+### Interactive Info System
+
+Display bot features with button navigation:
+
+```
+/info kanal:#channel
+/info kanal:#channel message_id:123456789
+```
+
+**Features:** ✨NEW
+- Interactive button-based navigation menu
+- 6 feature categories: Zitate, Rankings, Economy, Gaming, Tips, Hauptmenü
+- Click buttons to explore different sections
+- No scrolling through long embeds
+- Clean, organized presentation
+- Update existing messages with message_id parameter
+
+**Categories:**
+- 💬 **Zitate** - Text & Voice quote system with audio recording
+- 🏆 **Rankings** - Leaderboards and utility commands
+- 💰 **Economy** - Coin system and betting features
+- 🎮 **Gaming** - Stats, LFG, and live monitoring
+- 💡 **Tips** - Quick tips for maximizing features
+- 🏠 **Hauptmenü** - Return to main overview
+
+**Usage:**
+1. Admin runs `/info kanal:#info-channel`
+2. Bot posts interactive menu with buttons
+3. Users click buttons to navigate between sections
+4. Click "Hauptmenü" to return to overview
+5. Update with `/info kanal:#channel message_id:ID`
 
 ---
 
 # Commands Reference
 
-## Complete Command List (22 Commands)
+## Complete Command List (26 Commands)
 
 ### Quote System
 - `/merken` - Save text quote
@@ -806,11 +1009,17 @@ Try your luck:
 - `/assemble` - Squad assembly (LFG)
 - `/abo` - Game subscriptions
 - `/schedule` - Event scheduling
+
+### Mini-Games
 - `/roulette` - Russian Roulette
+- `/coinflip` - Coin flip betting
+- `/roll` - Dice roll (3 modes)
+- `/highlow` - High-Low guessing game
+- `/lottery` - Server lottery system
 
 ### Admin
 - `/config` - Bot configuration
-- `/info` - Help system
+- `/info` - Interactive help system with button navigation ✨NEW
 - `/ping` - Check latency
 
 ---
@@ -818,6 +1027,19 @@ Try your luck:
 # Database Schema
 
 ## Tables Overview
+
+### lottery_tickets
+Server lottery system.
+
+```sql
+CREATE TABLE lottery_tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    ticket_count INTEGER DEFAULT 1,
+    purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
 
 ### quotes
 Text chat quotes.
@@ -1141,6 +1363,9 @@ rsync -av data/voice-quotes/ backup/voice-quotes/
 
 ## Version History
 
+- **v2.3.0** (2026-01-18) - PvP Edition: Added Player vs Player modes to Coinflip, Dice Roll, and Russian Roulette
+- **v2.2.0** (2026-01-18) - Added 4 new minigames: Coin Flip, Dice Roll, High-Low, Lottery
+- **v2.1.0** (2026-01-18) - Interactive help menu with button navigation, discord.js v14 upgrade
 - **v2.0.0** (2026-01-18) - Voice audio recording, enhanced voice quotes
 - **v1.0.0** (2026-01-18) - Voice Chat Quote Book
 - **v0.9.0** (2026-01-16) - Economy & betting system, Arc Raiders integration

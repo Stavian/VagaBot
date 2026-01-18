@@ -51,7 +51,7 @@ module.exports = {
                     inline: false
                 }
             )
-            .setFooter({ text: 'VagaBot v2.0 – Nutze die Buttons zur Navigation' })
+            .setFooter({ text: 'VagaBot v2.2 – Nutze die Buttons zur Navigation' })
             .setTimestamp();
 
         const quotesEmbed = new EmbedBuilder()
@@ -96,7 +96,6 @@ module.exports = {
                     value: '`/tags` – Tag-Verwaltung\n' +
                            '`/suche` – Zitate durchsuchen\n' +
                            '`/schedule` – Event-Umfragen\n' +
-                           '`/roulette` – Russisches Roulette\n' +
                            '`/ping` – Bot-Latenz\n' +
                            '`/config` – Admin-Einstellungen',
                     inline: false
@@ -113,8 +112,19 @@ module.exports = {
                            '`/balance` – Kontostand prüfen\n\n' +
                            '**Weitere Quellen:**\n' +
                            '• Arc Raiders: 50-300+ Coins/Extraction\n' +
+                           '• Mini-Games: Gewinne bis zu 10x!\n' +
                            '• Wetten gewinnen\n' +
+                           '• Lottery-Jackpot\n' +
                            '• Startguthaben: 100 Coins',
+                    inline: false
+                },
+                {
+                    name: 'Mini-Games 🎰',
+                    value: '`/coinflip` – Kopf oder Zahl (2x)\n' +
+                           '`/roll` – Würfel (3 Modi, bis 10x!)\n' +
+                           '`/highlow` – Rate höher/tiefer (bis 3.5x)\n' +
+                           '`/lottery` – Server-Lotterie\n' +
+                           '`/roulette` – Russisches Roulette',
                     inline: false
                 },
                 {
@@ -172,6 +182,8 @@ module.exports = {
                     name: '🔥 Coins maximieren',
                     value: '• `/daily` jeden Tag (Streak-Bonus!)\n' +
                            '• Arc Raiders spielen\n' +
+                           '• Mini-Games: Klein anfangen!\n' +
+                           '• Lottery: Viele Tickets = bessere Chance\n' +
                            '• Klug wetten',
                     inline: true
                 },
@@ -189,9 +201,17 @@ module.exports = {
                            '• `/voice-zitat speichern` danach\n' +
                            '• 30s Audio automatisch gespeichert!',
                     inline: false
+                },
+                {
+                    name: '🎰 Mini-Game Strategien',
+                    value: '**Coinflip:** Einfach, 50/50 Chance\n' +
+                           '**Roll:** Standard = sicher, Jackpot = riskant\n' +
+                           '**High-Low:** Cashout bei 2-3 Runden für Profit\n' +
+                           '**Lottery:** Je mehr Tickets, desto besser!',
+                    inline: false
                 }
             )
-            .setFooter({ text: 'VagaBot v2.0 – Ständig weiterentwickelt!' })
+            .setFooter({ text: 'VagaBot v2.2 – Ständig weiterentwickelt! Jetzt mit 5 Mini-Games!' })
             .setTimestamp();
 
         // Create button rows

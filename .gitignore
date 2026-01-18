@@ -6,3 +6,4 @@ data/voice-quotes/
 logs/
 *.log
 .DS_Store
+DOCUMENTATION.md

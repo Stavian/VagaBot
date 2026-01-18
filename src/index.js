@@ -59,7 +59,70 @@ client.on(Events.InteractionCreate, async interaction => {
             console.error(error);
         }
     } else if (interaction.isButton()) {
-        if (interaction.customId.startsWith('lfg_')) {
+        if (interaction.customId.startsWith('duel_accept_') || interaction.customId.startsWith('duel_decline_')) {
+            // Coinflip duel button handler
+            const [prefix, action, duelId] = interaction.customId.split('_');
+            const coinflipCommand = require('./commands/coinflip');
+            if (coinflipCommand.handleDuelButton) {
+                try {
+                    await coinflipCommand.handleDuelButton(interaction, duelId, action);
+                } catch (error) {
+                    console.error('Coinflip duel button error:', error);
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({ content: 'Fehler beim Verarbeiten deiner Aktion.', ephemeral: true });
+                    }
+                }
+            }
+            return;
+        } else if (interaction.customId.startsWith('duel_roll_accept_') || interaction.customId.startsWith('duel_roll_decline_')) {
+            // Dice roll duel button handler
+            const parts = interaction.customId.split('_');
+            const action = parts[2]; // 'accept' or 'decline'
+            const duelId = parts.slice(3).join('_'); // Everything after action
+            const rollCommand = require('./commands/roll');
+            if (rollCommand.handleDuelButton) {
+                try {
+                    await rollCommand.handleDuelButton(interaction, duelId, action);
+                } catch (error) {
+                    console.error('Roll duel button error:', error);
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({ content: 'Fehler beim Verarbeiten deiner Aktion.', ephemeral: true });
+                    }
+                }
+            }
+            return;
+        } else if (interaction.customId.startsWith('roulette_join_') || interaction.customId.startsWith('roulette_start_') || interaction.customId.startsWith('roulette_cancel_')) {
+            // Roulette game button handler
+            const parts = interaction.customId.split('_');
+            const action = parts[1]; // 'join', 'start', or 'cancel'
+            const gameId = parts.slice(2).join('_'); // Everything after action
+            const rouletteCommand = require('./commands/roulette');
+            if (rouletteCommand.handleRouletteButton) {
+                try {
+                    await rouletteCommand.handleRouletteButton(interaction, gameId, action);
+                } catch (error) {
+                    console.error('Roulette button error:', error);
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({ content: 'Fehler beim Verarbeiten deiner Aktion.', ephemeral: true });
+                    }
+                }
+            }
+            return;
+        } else if (interaction.customId.startsWith('highlow_')) {
+            // High-Low game button handler
+            const highlowCommand = require('./commands/highlow');
+            if (highlowCommand.handleHighLowButton) {
+                try {
+                    await highlowCommand.handleHighLowButton(interaction);
+                } catch (error) {
+                    console.error('High-Low button error:', error);
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({ content: 'Fehler beim Verarbeiten deiner Aktion.', ephemeral: true });
+                    }
+                }
+            }
+            return;
+        } else if (interaction.customId.startsWith('lfg_')) {
             const [prefix, action, gameName] = interaction.customId.split('_');
             const game = db.getGame(gameName);
             if (!game) return interaction.reply({ content: 'Spielkonfiguration nicht gefunden.', ephemeral: true });

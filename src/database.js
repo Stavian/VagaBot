@@ -170,6 +170,17 @@ db.exec(`
     )
 `);
 
+// Lottery System
+db.exec(`
+    CREATE TABLE IF NOT EXISTS lottery_tickets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        ticket_count INTEGER DEFAULT 1,
+        purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
 // Migration: Remove role_id if it exists (simplest way is to ignore for now or recreate, 
 // but since we are dev, we just ensure the new structure works for new entries. 
 // Ideally we would migrate data, but for this switch we'll just handle new structure).
@@ -657,5 +668,88 @@ module.exports = {
     getVoiceQuotesByChannel: (channelId) => {
         const stmt = db.prepare('SELECT * FROM voice_quotes WHERE voice_channel_id = ? ORDER BY timestamp DESC');
         return stmt.all(channelId);
+    },
+
+    // Lottery System
+    addLotteryTickets: (userId, username, ticketCount) => {
+        // Check if user already has tickets
+        const existingStmt = db.prepare('SELECT * FROM lottery_tickets WHERE user_id = ?');
+        const existing = existingStmt.get(userId);
+
+        if (existing) {
+            // Update ticket count
+            const updateStmt = db.prepare('UPDATE lottery_tickets SET ticket_count = ticket_count + ?, purchased_at = CURRENT_TIMESTAMP WHERE user_id = ?');
+            return updateStmt.run(ticketCount, userId);
+        } else {
+            // Insert new entry
+            const insertStmt = db.prepare('INSERT INTO lottery_tickets (user_id, username, ticket_count) VALUES (?, ?, ?)');
+            return insertStmt.run(userId, username, ticketCount);
+        }
+    },
+    getLotteryTickets: (userId) => {
+        const stmt = db.prepare('SELECT ticket_count FROM lottery_tickets WHERE user_id = ?');
+        const result = stmt.get(userId);
+        return result ? result.ticket_count : 0;
+    },
+    getLotteryStatus: () => {
+        const stmt = db.prepare('SELECT SUM(ticket_count) as totalTickets, COUNT(*) as participants FROM lottery_tickets');
+        const result = stmt.get();
+        return {
+            totalTickets: result.totalTickets || 0,
+            participants: result.participants || 0
+        };
+    },
+    drawLotteryWinners: (count = 1) => {
+        // Get all participants with their tickets
+        const stmt = db.prepare('SELECT user_id, username, ticket_count FROM lottery_tickets');
+        const participants = stmt.all();
+
+        // Create weighted array (each ticket is an entry)
+        const tickets = [];
+        for (const participant of participants) {
+            for (let i = 0; i < participant.ticket_count; i++) {
+                tickets.push(participant);
+            }
+        }
+
+        // Shuffle and pick winners (without replacement)
+        const winners = [];
+        const usedUserIds = new Set();
+
+        while (winners.length < count && tickets.length > 0) {
+            const randomIndex = Math.floor(Math.random() * tickets.length);
+            const winner = tickets[randomIndex];
+
+            if (!usedUserIds.has(winner.user_id)) {
+                winners.push({
+                    userId: winner.user_id,
+                    username: winner.username,
+                    tickets: winner.ticket_count
+                });
+                usedUserIds.add(winner.user_id);
+            }
+
+            // Remove all tickets from this user to avoid duplicates
+            for (let i = tickets.length - 1; i >= 0; i--) {
+                if (tickets[i].user_id === winner.user_id) {
+                    tickets.splice(i, 1);
+                }
+            }
+        }
+
+        return winners;
+    },
+    resetLottery: () => {
+        const stmt = db.prepare('DELETE FROM lottery_tickets');
+        return stmt.run();
+    },
+    refundAllLotteryTickets: () => {
+        const stmt = db.prepare('SELECT user_id, ticket_count FROM lottery_tickets');
+        const participants = stmt.all();
+
+        for (const participant of participants) {
+            const refundAmount = participant.ticket_count * 10;
+            module.exports.addCoins(participant.user_id, refundAmount, 'lottery_refund', 'Lotterie zurückgesetzt - Rückerstattung');
+        }
     }
 };
