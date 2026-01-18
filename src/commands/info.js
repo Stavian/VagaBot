@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 const db = require('../database');
 
 module.exports = {
@@ -34,263 +34,216 @@ module.exports = {
 
         const introEmbed = new EmbedBuilder()
             .setColor('#5865F2')
-            .setTitle('🤖 Willkommen beim VagaBot!')
+            .setTitle('🤖 VagaBot - Dein Gaming-Companion')
             .setDescription(
-                '**VagaBot** ist dein ultimativer Gaming-Companion für Discord!\n\n' +
-                'Dieser Bot wurde entwickelt, um dein Server-Erlebnis zu verbessern und deine Gaming-Sessions unvergesslich zu machen. ' +
-                'Von legendären Zitaten über epische Fails bis hin zu automatischen Gaming-Stats und einem vollständigen Wirtschaftssystem – ' +
-                'VagaBot hat alles, was du brauchst!\n\n' +
-                '📌 **Wichtig:** Alle Befehle beginnen mit `/` (Slash-Commands)'
+                'Von Zitaten über Gaming-Stats bis hin zu Wetten – VagaBot macht deine Gaming-Sessions unvergesslich!\n\n' +
+                '📌 Alle Befehle beginnen mit `/`\n\n' +
+                '**Klicke auf die Buttons unten, um mehr über die Features zu erfahren:**'
             )
             .addFields(
                 {
-                    name: '🎯 Was kann der Bot?',
-                    value: 'VagaBot bietet eine umfassende Suite an Features:\n' +
-                           '• **Community-Features** – Zitate, Fails und Profile\n' +
-                           '• **Gaming-Integration** – Stats, Match-Tracking und LFG\n' +
-                           '• **Economy-System** – Coins verdienen und Wetten abschließen\n' +
-                           '• **Automatisierung** – Live-Monitoring und Auto-Rewards',
+                    name: '🎯 Hauptfeatures',
+                    value: '💬 **Zitate** – Text & Voice-Zitate mit Audio\n' +
+                           '🏆 **Rankings** – Bestenlisten & Stats\n' +
+                           '💰 **Economy** – Coins & Wetten\n' +
+                           '🎮 **Gaming** – Stats, LFG & Monitoring\n' +
+                           '💡 **Tips** – Schnelltipps',
                     inline: false
                 }
             )
-            .setFooter({ text: 'Scrolle nach unten für alle Features' })
+            .setFooter({ text: 'VagaBot v2.0 – Nutze die Buttons zur Navigation' })
             .setTimestamp();
 
         const quotesEmbed = new EmbedBuilder()
             .setColor('#FF6B6B')
             .setTitle('💬 Zitat-System')
-            .setDescription('Halte die unvergesslichsten Momente deiner Community fest!')
             .addFields(
                 {
-                    name: 'Text-Chat Befehle',
-                    value:
-                           '`/zitat hinzufuegen` – Speichere ein legendäres Zitat\n' +
-                           '`/zitat anzeigen` – Zeige ein zufälliges Zitat\n' +
-                           '`/zitat suchen` – Suche nach bestimmten Zitaten\n' +
-                           '`/zitat bearbeiten` – Bearbeite bestehende Zitate\n' +
-                           '`/zitat loeschen` – Entferne ein Zitat',
-                    inline: false
+                    name: 'Text-Chat',
+                    value: '`/zitat` – Speichern, anzeigen, suchen, bearbeiten\n' +
+                           '`/fail` – Dokumentiere Fails',
+                    inline: true
                 },
                 {
-                    name: '🎤 Voice-Chat Befehle',
-                    value:
-                           '`/voice-zitat speichern` – Speichere Zitate aus Voice-Chats\n' +
-                           '`/voice-zitat anzeigen` – Zeige ein zufälliges Voice-Zitat\n' +
-                           '`/voice-zitat suchen` – Suche nach Voice-Zitaten\n' +
-                           '`/voice-zitat löschen` – Entferne ein Voice-Zitat',
-                    inline: false
+                    name: 'Voice-Chat',
+                    value: '`/voice-zitat` – Voice-Zitate verwalten\n' +
+                           '`/voice-recording` – Audio aufnehmen',
+                    inline: true
                 },
                 {
                     name: '✨ Features',
-                    value: '• Bilder und Screenshots zu Zitaten hinzufügen\n' +
-                           '• Tags für bessere Organisation\n' +
-                           '• Suchfunktion für schnelles Finden\n' +
-                           '• Voice-Channel-Tracking für Voice-Zitate\n' +
-                           '• Separate Bestenlisten für Text- und Voice-Zitate',
+                    value: '• Bilder & Screenshots\n' +
+                           '• Tags & Suche\n' +
+                           '• **30s Audio-Aufnahmen**\n' +
+                           '• MP3-Download\n' +
+                           '• Separate Rankings',
                     inline: false
                 }
             );
 
-        const failsEmbed = new EmbedBuilder()
+        const rankingEmbed = new EmbedBuilder()
             .setColor('#4ECDC4')
-            .setTitle('📊 Hall of Shame')
-            .setDescription('Dokumentiere die epischsten Fails und Gaming-Momente!')
+            .setTitle('🏆 Rankings & Weitere Befehle')
             .addFields(
                 {
-                    name: 'Verfügbare Befehle',
-                    value:
-                           '`/fail hinzufuegen` – Dokumentiere einen epischen Fail\n' +
-                           '`/fail anzeigen` – Zeige einen zufälligen Fail\n' +
-                           '`/fail bearbeiten` – Bearbeite einen Fail-Eintrag\n' +
-                           '`/fail loeschen` – Entferne einen Fail',
+                    name: 'Rankings',
+                    value: '`/ranking` – Hall of Shame, Meist zitiert, Top Snitch, Reichste User\n' +
+                           '`/arcraiders leaderboard` – Top Extraktoren',
                     inline: false
                 },
                 {
-                    name: '🏆 Hall of Shame',
-                    value: 'Die Hall of Shame zeigt die User mit den meisten dokumentierten Fails. ' +
-                           'Wer steht ganz oben auf der Liste der Peinlichkeiten?',
+                    name: 'Utilities',
+                    value: '`/tags` – Tag-Verwaltung\n' +
+                           '`/suche` – Zitate durchsuchen\n' +
+                           '`/schedule` – Event-Umfragen\n' +
+                           '`/roulette` – Russisches Roulette\n' +
+                           '`/ping` – Bot-Latenz\n' +
+                           '`/config` – Admin-Einstellungen',
                     inline: false
                 }
             );
 
         const economyEmbed = new EmbedBuilder()
             .setColor('#FFD93D')
-            .setTitle('💰 Economy-System')
-            .setDescription('Verdiene Coins, baue dein Vermögen auf und werde der reichste User!')
+            .setTitle('💰 Economy & Wetten')
             .addFields(
                 {
-                    name: 'Verfügbare Befehle',
-                    value:
-                           '`/balance` – Zeige deinen Kontostand\n' +
-                           '`/daily` – Hole dir tägliche Belohnungen',
+                    name: 'Coins verdienen',
+                    value: '`/daily` – 50+ Coins täglich (Streak-Bonus bis +100)\n' +
+                           '`/balance` – Kontostand prüfen\n\n' +
+                           '**Weitere Quellen:**\n' +
+                           '• Arc Raiders: 50-300+ Coins/Extraction\n' +
+                           '• Wetten gewinnen\n' +
+                           '• Startguthaben: 100 Coins',
                     inline: false
                 },
                 {
-                    name: '💎 Coins verdienen',
-                    value:
-                           '**Tägliche Belohnung:** 50+ Coins jeden Tag\n' +
-                           '**Streak-Bonus:** +10-100 Coins bei täglicher Aktivität\n' +
-                           '**Wöchentliche Milestones:** +100 Coins bei 7-Tage-Streak\n' +
-                           '**Wetten gewinnen:** Coins durch erfolgreiche Wetten\n' +
-                           '**Startguthaben:** Neue User erhalten 100 Coins',
-                    inline: false
-                },
-                {
-                    name: '📈 Das Streak-System',
-                    value: 'Je öfter du täglich deine Belohnung abholst, desto höher wird dein Streak-Bonus! ' +
-                           'Verpasse keinen Tag, um maximale Belohnungen zu kassieren.',
+                    name: 'Wett-System',
+                    value: '`/wette erstellen` – Neue Wette\n' +
+                           '`/wette platzieren` – Coins setzen\n' +
+                           '`/wette liste` – Aktive Wetten\n' +
+                           '`/wette info` – Details\n' +
+                           '`/wette beenden` – Auflösen\n\n' +
+                           '**Typen:** Match, K/D, Extraction, Custom',
                     inline: false
                 }
             );
 
-        const bettingEmbed = new EmbedBuilder()
-            .setColor('#A8E6CF')
-            .setTitle('🎲 Wett-System')
-            .setDescription('Setze deine Coins auf Match-Ergebnisse und Spieler-Performance!')
-            .addFields(
-                {
-                    name: 'Verfügbare Befehle',
-                    value:
-                           '`/wette erstellen` – Erstelle eine neue Wette\n' +
-                           '`/wette platzieren` – Setze Coins auf eine Wette\n' +
-                           '`/wette liste` – Zeige alle aktiven Wetten\n' +
-                           '`/wette info` – Detaillierte Infos zu einer Wette\n' +
-                           '`/wette beenden` – Wette auflösen (nur Ersteller)',
-                    inline: false
-                },
-                {
-                    name: '🎯 Wett-Typen',
-                    value:
-                           '**Match-Ergebnis:** Wette auf Sieg oder Niederlage\n' +
-                           '**K/D Vorhersage:** Wird der Spieler die Ziel-K/D erreichen?\n' +
-                           '**Arc Raiders Extraction:** Erfolgreiche Extraction oder Elimination?\n' +
-                           '**Custom:** Erstelle eigene Wett-Kategorien',
-                    inline: false
-                },
-                {
-                    name: '⚡ Automatische Auflösung',
-                    value: 'K/D Wetten und Arc Raiders Extraction-Wetten werden automatisch aufgelöst! ' +
-                           'Gewinner erhalten ihren Anteil am Gesamt-Pool proportional zu ihrem Einsatz.',
-                    inline: false
-                }
-            );
 
         const gamingEmbed = new EmbedBuilder()
             .setColor('#95E1D3')
-            .setTitle('🎮 Gaming-Features')
-            .setDescription('Verknüpfe deine Gaming-Accounts und tracke deine Performance!')
+            .setTitle('🎮 Gaming & LFG')
             .addFields(
                 {
-                    name: 'Verfügbare Befehle',
-                    value:
-                           '`/link` – Verknüpfe deine Gaming-Accounts (Uplay, Origin, PSN, etc.)\n' +
-                           '`/arcraiders link` – Verknüpfe deinen Arc Raiders Account\n' +
-                           '`/arcraiders stats` – Zeige deine Arc Raiders Extraction-Statistiken\n' +
-                           '`/stats` – Zeige deine aktuellen Gaming-Statistiken\n' +
-                           '`/lfg` – Erstelle eine Squad-Anfrage (Looking For Group)',
-                    inline: false
+                    name: 'Account-Linking',
+                    value: '`/link` – Steam, Uplay, Origin, PSN, Xbox\n' +
+                           '`/arcraiders link` – Arc Raiders\n' +
+                           '`/stats` – Gaming-Stats anzeigen',
+                    inline: true
+                },
+                {
+                    name: 'Squad & LFG',
+                    value: '`/assemble` – Squad-Anfrage\n' +
+                           '`/abo` – Spiele-Abos verwalten',
+                    inline: true
                 },
                 {
                     name: '📈 Live-Monitoring',
-                    value:
-                           '• **Automatische Match-Erkennung** alle 10 Minuten\n' +
-                           '• **Arc Raiders Extraction-Tracking** mit Loot-Analyse\n' +
-                           '• **MVP-Alarm** bei herausragenden Performances (K/D > 3.0)\n' +
-                           '• **Trash-Talk** bei schlechten Runden (K/D < 0.5)\n' +
-                           '• **Performance-Tracking** über alle Spiele hinweg',
+                    value: '• Match-Erkennung (10min)\n' +
+                           '• Arc Raiders Tracking\n' +
+                           '• Coin-Belohnungen\n' +
+                           '• MVP-Alarm (K/D > 3.0)\n' +
+                           '• Trash-Talk (K/D < 0.5)',
                     inline: false
                 },
                 {
-                    name: '🎯 Unterstützte Spiele',
-                    value:
-                           '• **Arc Raiders** (Extraction-Shooter mit Loot-Tracking)\n' +
-                           '• Rainbow Six Siege (Uplay, PSN, Xbox)\n' +
-                           '• Battlefield 2042 (Origin, PSN, Xbox)\n' +
-                           '• For Honor (Uplay, PSN, Xbox)\n' +
-                           '• Destiny 2 (Steam, PSN, Xbox)\n' +
-                           '• Valorant (Riot)',
+                    name: '🎯 Arc Raiders Rewards',
+                    value: '50 Coins Basis + 5/Kill + 10/Rare + 25/Epic + 50/Legendary + 1/min',
                     inline: false
                 }
             );
 
-        const miscEmbed = new EmbedBuilder()
-            .setColor('#F38181')
-            .setTitle('🏆 Rankings & Weitere Features')
-            .addFields(
-                {
-                    name: '📊 Rankings',
-                    value:
-                           '`/ranking` – Zeige Bestenlisten\n' +
-                           '`/arcraiders leaderboard` – Top Arc Raiders Extraktoren\n\n' +
-                           'Verfügbare Rankings:\n' +
-                           '• **Hall of Shame** – Meiste Fails\n' +
-                           '• **Meist zitiert** – Legendärste User (Text)\n' +
-                           '• **Meist in Voice zitiert** – Legendärste Voice-Momente\n' +
-                           '• **Top Snitch** – Meiste Beiträge (Zitate + Fails)\n' +
-                           '• **Top Voice-Snitch** – Meiste Voice-Zitate gespeichert\n' +
-                           '• **Reichste User** – Höchster Coin-Kontostand\n' +
-                           '• **Top Earners** – Meiste Coins insgesamt verdient\n' +
-                           '• **Top Extraktoren** – Beste Arc Raiders Spieler',
-                    inline: false
-                },
-                {
-                    name: '🎯 Weitere Befehle',
-                    value:
-                           '`/tag` – Erstelle und nutze Custom-Tags für schnelle Antworten\n' +
-                           '`/profil` – Zeige detaillierte User-Profile und Aktivität\n' +
-                           '`/avatar` – Zeige User-Avatare in hoher Auflösung\n' +
-                           '`/ping` – Überprüfe die Bot-Latenz und Reaktionszeit',
-                    inline: false
-                }
-            );
 
         const tipsEmbed = new EmbedBuilder()
             .setColor('#6C5CE7')
-            .setTitle('💡 Tipps & Tricks')
-            .setDescription('So holst du das Maximum aus VagaBot heraus!')
+            .setTitle('💡 Quick Tips')
             .addFields(
                 {
-                    name: '🔥 Daily Streak maximieren',
-                    value: 'Hole dir jeden Tag deine `/daily` Belohnung! Nach 7 Tagen erhältst du einen extra Bonus von 100 Coins.',
-                    inline: false
+                    name: '🔥 Coins maximieren',
+                    value: '• `/daily` jeden Tag (Streak-Bonus!)\n' +
+                           '• Arc Raiders spielen\n' +
+                           '• Klug wetten',
+                    inline: true
                 },
                 {
-                    name: '💰 Coins verdienen',
-                    value: 'Die beste Strategie: Tägliche Belohnungen sammeln und klug auf Wetten setzen. ' +
-                           'Analysiere die Spieler-Stats bevor du setzt!',
-                    inline: false
+                    name: '🎮 Account-Setup',
+                    value: '• `/link` für Stats\n' +
+                           '• `/arcraiders link` für Coins\n' +
+                           '• `/abo` für LFG-Pings',
+                    inline: true
                 },
                 {
-                    name: '🎮 Gaming-Account verknüpfen',
-                    value: 'Verknüpfe deine Gaming-Accounts mit `/link` und `/arcraiders link`, um automatisch getrackt zu werden, ' +
-                           'Coins für Extractions zu verdienen und an automatischen Wetten teilzunehmen.',
-                    inline: false
-                },
-                {
-                    name: '📱 LFG nutzen',
-                    value: 'Erstelle Squad-Anfragen mit `/lfg`, um schnell Mitspieler für deine Sessions zu finden. ' +
-                           'Andere User werden benachrichtigt und können direkt beitreten!',
+                    name: '🎙️ Voice-Recording',
+                    value: '• `/voice-recording start` im Channel\n' +
+                           '• Lustige Momente passieren\n' +
+                           '• `/voice-zitat speichern` danach\n' +
+                           '• 30s Audio automatisch gespeichert!',
                     inline: false
                 }
             )
-            .setFooter({ text: 'VagaBot wird ständig weiterentwickelt – stay tuned für neue Features!' })
+            .setFooter({ text: 'VagaBot v2.0 – Ständig weiterentwickelt!' })
             .setTimestamp();
+
+        // Create button rows
+        const buttonRow1 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('info_quotes')
+                    .setLabel('💬 Zitate')
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                    .setCustomId('info_rankings')
+                    .setLabel('🏆 Rankings')
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                    .setCustomId('info_economy')
+                    .setLabel('💰 Economy')
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                    .setCustomId('info_gaming')
+                    .setLabel('🎮 Gaming')
+                    .setStyle(ButtonStyle.Primary)
+            );
+
+        const buttonRow2 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('info_tips')
+                    .setLabel('💡 Tips')
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId('info_home')
+                    .setLabel('🏠 Hauptmenü')
+                    .setStyle(ButtonStyle.Secondary)
+            );
 
         try {
             if (messageId) {
                 // Update existing message
                 const message = await channel.messages.fetch(messageId);
                 await message.edit({
-                    embeds: [introEmbed, quotesEmbed, failsEmbed, economyEmbed, bettingEmbed, gamingEmbed, miscEmbed, tipsEmbed]
+                    embeds: [introEmbed],
+                    components: [buttonRow1, buttonRow2]
                 });
                 await interaction.reply({
-                    content: `✅ Info-Nachricht wurde aktualisiert und angepinnt in ${channel}!`,
+                    content: `✅ Info-Nachricht wurde aktualisiert in ${channel}!`,
                     ephemeral: true
                 });
             } else {
                 // Send new message
                 const sentMessage = await channel.send({
-                    embeds: [introEmbed, quotesEmbed, failsEmbed, economyEmbed, bettingEmbed, gamingEmbed, miscEmbed, tipsEmbed]
+                    embeds: [introEmbed],
+                    components: [buttonRow1, buttonRow2]
                 });
 
                 // Pin the message
