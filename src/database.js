@@ -130,6 +130,46 @@ db.exec(`
     )
 `);
 
+// Arc Raiders Extraction Tracking
+db.exec(`
+    CREATE TABLE IF NOT EXISTS arc_extractions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        player_id TEXT NOT NULL,
+        extraction_id TEXT NOT NULL UNIQUE,
+        success BOOLEAN DEFAULT 1,
+        kills INTEGER DEFAULT 0,
+        damage_dealt INTEGER DEFAULT 0,
+        survival_time INTEGER DEFAULT 0,
+        loot_count INTEGER DEFAULT 0,
+        rarity_common INTEGER DEFAULT 0,
+        rarity_uncommon INTEGER DEFAULT 0,
+        rarity_rare INTEGER DEFAULT 0,
+        rarity_epic INTEGER DEFAULT 0,
+        rarity_legendary INTEGER DEFAULT 0,
+        squad_size INTEGER DEFAULT 1,
+        squad_members TEXT,
+        coins_earned INTEGER DEFAULT 0,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
+// Voice Chat Quote System
+db.exec(`
+    CREATE TABLE IF NOT EXISTS voice_quotes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        quote_text TEXT NOT NULL,
+        voice_channel_id TEXT,
+        voice_channel_name TEXT,
+        added_by TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        tags TEXT,
+        audio_file_path TEXT
+    )
+`);
+
 // Migration: Remove role_id if it exists (simplest way is to ignore for now or recreate, 
 // but since we are dev, we just ensure the new structure works for new entries. 
 // Ideally we would migrate data, but for this switch we'll just handle new structure).
@@ -488,5 +528,134 @@ module.exports = {
         }
 
         return { success: true, winners: winners.length, losers: losers.length, pool: totalPool };
+    },
+
+    // Arc Raiders Extraction System
+    saveExtraction: (userId, playerId, extractionData) => {
+        const stmt = db.prepare(`
+            INSERT INTO arc_extractions (
+                user_id, player_id, extraction_id, success, kills, damage_dealt,
+                survival_time, loot_count, rarity_common, rarity_uncommon,
+                rarity_rare, rarity_epic, rarity_legendary, squad_size,
+                squad_members, coins_earned, timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        return stmt.run(
+            userId,
+            playerId,
+            extractionData.id,
+            extractionData.success ? 1 : 0,
+            extractionData.kills || 0,
+            extractionData.damage_dealt || 0,
+            extractionData.survival_time || 0,
+            extractionData.loot_count || 0,
+            extractionData.rarity_count?.common || 0,
+            extractionData.rarity_count?.uncommon || 0,
+            extractionData.rarity_count?.rare || 0,
+            extractionData.rarity_count?.epic || 0,
+            extractionData.rarity_count?.legendary || 0,
+            extractionData.squad_size || 1,
+            extractionData.squad_members ? JSON.stringify(extractionData.squad_members) : null,
+            extractionData.coin_reward || 0,
+            extractionData.timestamp ? extractionData.timestamp.toISOString() : new Date().toISOString()
+        );
+    },
+    getLastExtraction: (userId) => {
+        const stmt = db.prepare('SELECT extraction_id FROM arc_extractions WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1');
+        const result = stmt.get(userId);
+        return result ? result.extraction_id : null;
+    },
+    getExtractionStats: (userId) => {
+        const stmt = db.prepare(`
+            SELECT
+                COUNT(*) as total_extractions,
+                SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_extractions,
+                SUM(kills) as total_kills,
+                SUM(damage_dealt) as total_damage,
+                SUM(loot_count) as total_loot,
+                SUM(coins_earned) as total_coins_earned,
+                AVG(survival_time) as avg_survival_time
+            FROM arc_extractions
+            WHERE user_id = ?
+        `);
+        return stmt.get(userId);
+    },
+    getTopExtractors: () => {
+        const stmt = db.prepare(`
+            SELECT
+                user_id,
+                COUNT(*) as extractions,
+                SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
+                SUM(rarity_legendary) as legendary_items
+            FROM arc_extractions
+            GROUP BY user_id
+            ORDER BY legendary_items DESC, successful DESC
+            LIMIT 10
+        `);
+        return stmt.all();
+    },
+
+    // Voice Quote Management
+    addVoiceQuote: (userId, username, quoteText, addedBy, voiceChannelId = null, voiceChannelName = null, tags = null, audioFilePath = null) => {
+        const stmt = db.prepare('INSERT INTO voice_quotes (user_id, username, quote_text, added_by, voice_channel_id, voice_channel_name, tags, audio_file_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        return stmt.run(userId, username, quoteText, addedBy, voiceChannelId, voiceChannelName, tags, audioFilePath);
+    },
+    deleteVoiceQuote: (id) => {
+        const stmt = db.prepare('DELETE FROM voice_quotes WHERE id = ?');
+        return stmt.run(id);
+    },
+    updateVoiceQuote: (id, newText, newTags) => {
+        if (newText && newTags) {
+            const stmt = db.prepare('UPDATE voice_quotes SET quote_text = ?, tags = ? WHERE id = ?');
+            return stmt.run(newText, newTags, id);
+        } else if (newText) {
+            const stmt = db.prepare('UPDATE voice_quotes SET quote_text = ? WHERE id = ?');
+            return stmt.run(newText, id);
+        } else if (newTags) {
+            const stmt = db.prepare('UPDATE voice_quotes SET tags = ? WHERE id = ?');
+            return stmt.run(newTags, id);
+        }
+        return { changes: 0 };
+    },
+    getVoiceQuoteById: (id) => {
+        const stmt = db.prepare('SELECT * FROM voice_quotes WHERE id = ?');
+        return stmt.get(id);
+    },
+    getRandomVoiceQuote: (userId = null) => {
+        if (userId) {
+            const stmt = db.prepare('SELECT * FROM voice_quotes WHERE user_id = ? ORDER BY RANDOM() LIMIT 1');
+            return stmt.get(userId);
+        }
+        const stmt = db.prepare('SELECT * FROM voice_quotes ORDER BY RANDOM() LIMIT 1');
+        return stmt.get();
+    },
+    getMostVoiceQuoted: () => {
+        const stmt = db.prepare(`
+            SELECT username, COUNT(*) as count
+            FROM voice_quotes
+            GROUP BY username
+            ORDER BY count DESC
+            LIMIT 5
+        `);
+        return stmt.all();
+    },
+    getTopVoiceSnitch: () => {
+        const stmt = db.prepare(`
+            SELECT added_by as username, COUNT(*) as count
+            FROM voice_quotes
+            GROUP BY added_by
+            ORDER BY count DESC
+            LIMIT 5
+        `);
+        return stmt.all();
+    },
+    searchVoiceQuotes: (keyword) => {
+        const stmt = db.prepare('SELECT * FROM voice_quotes WHERE quote_text LIKE ? ORDER BY RANDOM()');
+        return stmt.all(`%${keyword}%`);
+    },
+    getVoiceQuotesByChannel: (channelId) => {
+        const stmt = db.prepare('SELECT * FROM voice_quotes WHERE voice_channel_id = ? ORDER BY timestamp DESC');
+        return stmt.all(channelId);
     }
 };

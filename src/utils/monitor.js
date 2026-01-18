@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const db = require('../database');
 const trackerUtils = require('./tracker');
+const arcUtils = require('./arcraiders');
 
 const CHECK_INTERVAL = 10 * 60 * 1000; // 10 Minutes
 
@@ -50,6 +51,9 @@ async function startMonitoring(client) {
         for (const item of checkList) {
             await checkPlatform(channel, item.game, item.plat, item.dbKey);
         }
+
+        // Check Arc Raiders extractions
+        await checkArcRaidersExtractions(channel);
     }, CHECK_INTERVAL);
 }
 
@@ -158,6 +162,146 @@ async function checkAndResolveBets(channel, userId, kd, game) {
                     { name: '📊 K/D erreicht', value: `${kd.toFixed(2)}`, inline: true },
                     { name: '🎯 Zielwert', value: `${targetValue}`, inline: true },
                     { name: '🏆 Gewinner-Option', value: winningOption === 'yes' ? '✅ Über' : '❌ Unter', inline: true },
+                    { name: '👥 Gewinner', value: `${result.winners}`, inline: true },
+                    { name: '💰 Ausgezahlter Pool', value: `${result.pool.toLocaleString('de-DE')} Coins`, inline: true }
+                )
+                .setTimestamp();
+
+            await channel.send({ embeds: [embed] });
+        }
+    }
+}
+
+async function checkArcRaidersExtractions(channel) {
+    // Check if Arc Raiders API is configured
+    if (!process.env.ARC_RAIDERS_API_KEY) {
+        return;
+    }
+
+    const links = db.getAllLinksForPlatform('arc_raiders');
+
+    for (const link of links) {
+        try {
+            const extractions = await arcUtils.getRecentExtractions(link.external_id);
+
+            if (!extractions || extractions.length === 0) continue;
+
+            const latestExtraction = extractions[0];
+            const lastSeenExtractionId = db.getLastExtraction(link.user_id);
+
+            if (latestExtraction.id !== lastSeenExtractionId) {
+                // Parse extraction data
+                const parsed = arcUtils.parseExtraction(latestExtraction);
+
+                // Save extraction to database
+                db.saveExtraction(link.user_id, link.external_id, parsed);
+
+                // Award coins
+                if (parsed.coin_reward > 0) {
+                    db.addCoins(link.user_id, parsed.coin_reward, 'arc_extraction', 'Arc Raiders Extraction');
+                }
+
+                // Check and resolve extraction bets
+                await checkExtractionBets(channel, link.user_id, parsed);
+
+                // Post extraction announcement
+                await postExtractionAnnouncement(channel, link.user_id, parsed);
+            }
+        } catch (error) {
+            console.log(`[Monitor] Überspringe Arc Raiders für ${link.external_id} (API möglicherweise nicht verfügbar)`);
+        }
+    }
+}
+
+async function postExtractionAnnouncement(channel, userId, extraction) {
+    const user = `<@${userId}>`;
+    const embed = new EmbedBuilder();
+
+    if (extraction.success) {
+        // Successful extraction
+        const rarityFields = [];
+        if (extraction.rarity_count.legendary > 0) {
+            rarityFields.push(`${arcUtils.getRarityDisplay('legendary').emoji} ${extraction.rarity_count.legendary} Legendär`);
+        }
+        if (extraction.rarity_count.epic > 0) {
+            rarityFields.push(`${arcUtils.getRarityDisplay('epic').emoji} ${extraction.rarity_count.epic} Episch`);
+        }
+        if (extraction.rarity_count.rare > 0) {
+            rarityFields.push(`${arcUtils.getRarityDisplay('rare').emoji} ${extraction.rarity_count.rare} Selten`);
+        }
+
+        const rarityText = rarityFields.length > 0 ? rarityFields.join(' • ') : 'Keine seltenen Items';
+
+        embed.setColor('#00ff88')
+            .setTitle('✅ ERFOLGREICHE EXTRACTION!')
+            .setDescription(`${user} hat erfolgreich extrahiert in **Arc Raiders**!`)
+            .addFields(
+                { name: '💀 Kills', value: `${extraction.kills}`, inline: true },
+                { name: '⏱️ Überlebenszeit', value: arcUtils.formatSurvivalTime(extraction.survival_time), inline: true },
+                { name: '🎁 Loot', value: `${extraction.loot_count} Items`, inline: true }
+            );
+
+        if (rarityFields.length > 0) {
+            embed.addFields({ name: '✨ Highlights', value: rarityText, inline: false });
+        }
+
+        if (extraction.squad_size > 1) {
+            const squadText = extraction.squad_members.slice(0, 3).join(', ');
+            const remaining = extraction.squad_size - 3;
+            embed.addFields({
+                name: '👥 Squad',
+                value: `${squadText}${remaining > 0 ? ` (+${remaining} weitere)` : ''}`,
+                inline: false
+            });
+        }
+
+        embed.addFields({ name: '💰 Belohnung', value: `+${extraction.coin_reward} Coins`, inline: false });
+
+        // Special reactions for legendary loot
+        if (extraction.rarity_count.legendary > 0) {
+            embed.setImage('https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif');
+        }
+    } else {
+        // Failed extraction
+        embed.setColor('#ff0000')
+            .setTitle('💀 EXTRACTION FEHLGESCHLAGEN')
+            .setDescription(`${user} wurde eliminiert in **Arc Raiders**...`)
+            .addFields(
+                { name: '💀 Kills', value: `${extraction.kills}`, inline: true },
+                { name: '⏱️ Überlebenszeit', value: arcUtils.formatSurvivalTime(extraction.survival_time), inline: true },
+                { name: '💰 Verlust', value: 'Alles', inline: true }
+            )
+            .setFooter({ text: 'Besser vorbereiten für den nächsten Raid!' });
+    }
+
+    embed.setTimestamp();
+
+    await channel.send({ content: user, embeds: [embed] });
+}
+
+async function checkExtractionBets(channel, userId, extraction) {
+    // Get all active extraction bets for this user
+    const activeBets = db.getActiveBets();
+    const userBets = activeBets.filter(bet =>
+        bet.bet_type === 'extraction_success' &&
+        bet.target_user_id === userId &&
+        !bet.resolved
+    );
+
+    for (const bet of userBets) {
+        // Resolve bet based on extraction success
+        const winningOption = extraction.success ? 'yes' : 'no';
+        const result = db.resolveBet(bet.id, winningOption);
+
+        if (result.success) {
+            const embed = new EmbedBuilder()
+                .setColor('#FFD700')
+                .setTitle('🎲 Extraction-Wette aufgelöst!')
+                .setDescription(`**${bet.title}**\n\nDie Wette wurde basierend auf <@${userId}>'s Extraction aufgelöst.`)
+                .addFields(
+                    { name: '🎮 Spiel', value: 'Arc Raiders', inline: true },
+                    { name: '✅ Ergebnis', value: extraction.success ? 'Erfolgreich' : 'Fehlgeschlagen', inline: true },
+                    { name: '🏆 Gewinner-Option', value: winningOption === 'yes' ? '✅ Erfolg' : '❌ Fehlgeschlagen', inline: true },
                     { name: '👥 Gewinner', value: `${result.winners}`, inline: true },
                     { name: '💰 Ausgezahlter Pool', value: `${result.pool.toLocaleString('de-DE')} Coins`, inline: true }
                 )

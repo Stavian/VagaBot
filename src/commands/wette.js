@@ -20,6 +20,7 @@ module.exports = {
                         .addChoices(
                             { name: 'Match Ergebnis (Sieg/Niederlage)', value: 'match_result' },
                             { name: 'K/D Vorhersage', value: 'kd_prediction' },
+                            { name: 'Arc Raiders Extraction (Erfolg/Fehlschlag)', value: 'extraction_success' },
                             { name: 'Custom', value: 'custom' }
                         ))
                 .addStringOption(option =>
@@ -134,7 +135,7 @@ async function handleCreate(interaction) {
         .setDescription(`**${title}**\n\n${description}`)
         .addFields(
             { name: '🆔 Wett-ID', value: `${result.lastInsertRowid}`, inline: true },
-            { name: '📋 Typ', value: type === 'match_result' ? 'Match Ergebnis' : type === 'kd_prediction' ? 'K/D Vorhersage' : 'Custom', inline: true }
+            { name: '📋 Typ', value: type === 'match_result' ? 'Match Ergebnis' : type === 'kd_prediction' ? 'K/D Vorhersage' : type === 'extraction_success' ? 'Arc Raiders Extraction' : 'Custom', inline: true }
         )
         .setFooter({ text: `Nutze /wette platzieren id:${result.lastInsertRowid} um zu setzen` })
         .setTimestamp();
@@ -207,7 +208,7 @@ async function handleList(interaction) {
             // Keep ID if fetch fails
         }
 
-        const typeDisplay = bet.bet_type === 'match_result' ? '⚔️ Match' : bet.bet_type === 'kd_prediction' ? '📊 K/D' : '🎯 Custom';
+        const typeDisplay = bet.bet_type === 'match_result' ? '⚔️ Match' : bet.bet_type === 'kd_prediction' ? '📊 K/D' : bet.bet_type === 'extraction_success' ? '📦 Extraction' : '🎯 Custom';
         const closesInfo = bet.closes_at ? `⏰ <t:${Math.floor(new Date(bet.closes_at).getTime() / 1000)}:R>` : '🕐 Offen';
 
         embed.addFields({
@@ -249,7 +250,7 @@ async function handleInfo(interaction) {
         .setDescription(bet.description)
         .addFields(
             { name: '🆔 Wett-ID', value: `${bet.id}`, inline: true },
-            { name: '📋 Typ', value: bet.bet_type === 'match_result' ? 'Match Ergebnis' : bet.bet_type === 'kd_prediction' ? 'K/D Vorhersage' : 'Custom', inline: true },
+            { name: '📋 Typ', value: bet.bet_type === 'match_result' ? 'Match Ergebnis' : bet.bet_type === 'kd_prediction' ? 'K/D Vorhersage' : bet.bet_type === 'extraction_success' ? 'Arc Raiders Extraction' : 'Custom', inline: true },
             { name: '👤 Erstellt von', value: creator, inline: true },
             { name: '💰 Gesamter Pool', value: `${totalPool.toLocaleString('de-DE')} Coins`, inline: true },
             { name: '👥 Teilnehmer', value: `${placements.length}`, inline: true },

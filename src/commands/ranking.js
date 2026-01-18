@@ -11,6 +11,7 @@ module.exports = {
                 .setRequired(false)
                 .addChoices(
                     { name: 'Zitate & Fails', value: 'quotes' },
+                    { name: 'Voice-Zitate', value: 'voice' },
                     { name: 'Coins', value: 'coins' },
                     { name: 'Alle', value: 'all' }
                 )),
@@ -20,6 +21,8 @@ module.exports = {
         const topFails = db.getTopFailures();
         const mostQuoted = db.getMostQuoted();
         const topSnitch = db.getTopSnitch();
+        const mostVoiceQuoted = db.getMostVoiceQuoted();
+        const topVoiceSnitch = db.getTopVoiceSnitch();
         const topCoins = db.getTopCoinHolders();
         const topEarners = db.getTopCoinEarners();
 
@@ -70,6 +73,18 @@ module.exports = {
                     { name: '🔥 Hall of Shame (Meiste Fails)', value: formatList(topFails, 'Fails'), inline: true },
                     { name: '📢 Meist zitiert', value: formatList(mostQuoted, 'Zitate'), inline: true },
                     { name: '🕵️ Top Snitch (Meiste Beiträge)', value: formatList(topSnitch, 'Einträge'), inline: false }
+                );
+        }
+
+        if (type === 'voice' || type === 'all') {
+            if (type === 'all') {
+                embed.addFields({ name: '\u200B', value: '─────────────────────────', inline: false });
+            }
+
+            embed.setTitle(type === 'voice' ? '🎤 VagaBot Bestenlisten - Voice-Zitate' : embed.data.title)
+                .addFields(
+                    { name: '🎤 Meist in Voice zitiert', value: formatList(mostVoiceQuoted, 'Voice-Zitate'), inline: true },
+                    { name: '👂 Top Voice-Snitch', value: formatList(topVoiceSnitch, 'Voice-Einträge'), inline: true }
                 );
         }
 
