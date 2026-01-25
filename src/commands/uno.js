@@ -225,22 +225,24 @@ async function startGameLogic(interaction, gameId) {
             name: `uno-${gameData.players.map(p => p.username).join('-').substring(0, 30)}`,
             type: ChannelType.GuildText,
             parent: '1287496684443537488', // Category ID for UNO games
-            reason: `VagaUNO Spiel von ${gameData.hostName}`,
-            permissionOverwrites: [
-                {
-                    id: guild.id,
-                    deny: [PermissionFlagsBits.ViewChannel]
-                },
-                ...gameData.players.map(player => ({
-                    id: player.id,
-                    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory]
-                })),
-                {
-                    id: interaction.client.user.id,
-                    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages]
-                }
-            ]
+            reason: `VagaUNO Spiel von ${gameData.hostName}`
         });
+
+        // Set permissions after creation
+        await tempChannel.permissionOverwrites.set([
+            {
+                id: guild.id,
+                deny: [PermissionFlagsBits.ViewChannel]
+            },
+            ...gameData.players.map(player => ({
+                id: player.id,
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory]
+            })),
+            {
+                id: interaction.client.user.id,
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels]
+            }
+        ]);
 
         gameData.tempChannelId = tempChannel.id;
         gameData.channelId = tempChannel.id;
