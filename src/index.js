@@ -61,7 +61,9 @@ client.on(Events.InteractionCreate, async interaction => {
     } else if (interaction.isButton()) {
         if (interaction.customId.startsWith('duel_accept_') || interaction.customId.startsWith('duel_decline_')) {
             // Coinflip duel button handler
-            const [prefix, action, duelId] = interaction.customId.split('_');
+            const parts = interaction.customId.split('_');
+            const action = parts[1]; // 'accept' or 'decline'
+            const duelId = parts.slice(2).join('_'); // Reconstruct full duelId (userId_opponentId_timestamp)
             const coinflipCommand = require('./commands/coinflip');
             if (coinflipCommand.handleDuelButton) {
                 try {
