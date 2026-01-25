@@ -192,6 +192,24 @@ db.exec(`
     )
 `);
 
+// UNO Game History
+db.exec(`
+    CREATE TABLE IF NOT EXISTS uno_games (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_id TEXT NOT NULL UNIQUE,
+        host_id TEXT NOT NULL,
+        players TEXT NOT NULL,
+        winner_id TEXT,
+        bet_amount INTEGER,
+        total_pot INTEGER,
+        chaos_events TEXT,
+        turns_taken INTEGER DEFAULT 0,
+        duration_seconds INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        finished_at DATETIME
+    )
+`);
+
 // Migration: Remove role_id if it exists (simplest way is to ignore for now or recreate, 
 // but since we are dev, we just ensure the new structure works for new entries. 
 // Ideally we would migrate data, but for this switch we'll just handle new structure).
@@ -793,5 +811,55 @@ module.exports = {
             remainingAmount: dailyLimit - newTotal,
             dailyLimit: dailyLimit
         };
+    },
+
+    // UNO Game System
+    saveUnoGame: (gameData) => {
+        const stmt = db.prepare(`
+            INSERT INTO uno_games (
+                game_id, host_id, players, winner_id, bet_amount,
+                total_pot, chaos_events, turns_taken, duration_seconds, finished_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        return stmt.run(
+            gameData.gameId,
+            gameData.hostId,
+            JSON.stringify(gameData.players.map(p => ({ id: p.id, username: p.username }))),
+            gameData.winnerId || null,
+            gameData.betAmount,
+            gameData.totalPot,
+            JSON.stringify(gameData.chaosEvents || []),
+            gameData.turnsTaken || 0,
+            gameData.durationSeconds || 0,
+            new Date().toISOString()
+        );
+    },
+
+    getUnoStats: (userId) => {
+        const stmt = db.prepare(`
+            SELECT
+                COUNT(*) as games_played,
+                SUM(CASE WHEN winner_id = ? THEN 1 ELSE 0 END) as wins,
+                SUM(CASE WHEN winner_id = ? THEN total_pot ELSE 0 END) as coins_won
+            FROM uno_games
+            WHERE players LIKE ?
+        `);
+        return stmt.get(userId, userId, `%"${userId}"%`);
+    },
+
+    getTopUnoPlayers: () => {
+        const stmt = db.prepare(`
+            SELECT
+                winner_id as user_id,
+                COUNT(*) as wins,
+                SUM(total_pot) as total_winnings
+            FROM uno_games
+            WHERE winner_id IS NOT NULL
+            GROUP BY winner_id
+            ORDER BY wins DESC
+            LIMIT 10
+        `);
+        return stmt.all();
     }
 };

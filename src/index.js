@@ -122,6 +122,24 @@ client.on(Events.InteractionCreate, async interaction => {
                 }
             }
             return;
+        } else if (interaction.customId.startsWith('uno_')) {
+            // UNO game button handler
+            const unoCommand = require('./commands/uno');
+            if (unoCommand.handleUnoButton) {
+                try {
+                    await unoCommand.handleUnoButton(interaction);
+                } catch (error) {
+                    console.error('UNO button error:', error);
+                    logErrorToDiscord(error, `UNO Button: ${interaction.customId}`);
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({
+                            content: 'Fehler beim Verarbeiten deiner Aktion.',
+                            ephemeral: true
+                        });
+                    }
+                }
+            }
+            return;
         } else if (interaction.customId.startsWith('lfg_')) {
             const [prefix, action, gameName] = interaction.customId.split('_');
             const game = db.getGame(gameName);
