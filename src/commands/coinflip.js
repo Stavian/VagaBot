@@ -123,6 +123,16 @@ module.exports = {
 
         } else {
             // Solo mode vs Bot
+            // Check if user has 2x bet for potential loss
+            const userData = db.getUserCoins(userId);
+            const requiredCoins = betAmount * 2;
+            if (userData.coins < requiredCoins) {
+                return interaction.reply({
+                    content: `❌ Du brauchst mindestens ${requiredCoins.toLocaleString('de-DE')} Coins (2x Einsatz für möglichen Verlust)!\n💳 Dein Kontostand: ${userData.coins.toLocaleString('de-DE')} Coins`,
+                    ephemeral: true
+                });
+            }
+
             // Deduct coins
             db.addCoins(userId, -betAmount, 'coinflip', 'Coinflip Einsatz');
 
@@ -142,19 +152,24 @@ module.exports = {
                 .setTimestamp();
 
             if (won) {
-                const winnings = betAmount * 2;
+                const winnings = Math.floor(betAmount * 1.8);
                 db.addCoins(userId, winnings, 'coinflip_win', 'Coinflip Gewinn');
                 const newBalance = db.getUserCoins(userId).coins;
+                const netProfit = winnings - betAmount;
 
                 embed.addFields(
-                    { name: '🎉 Ergebnis', value: `**GEWONNEN!**\n+${winnings.toLocaleString('de-DE')} Coins`, inline: false },
+                    { name: '🎉 Ergebnis', value: `**GEWONNEN!**\n+${netProfit.toLocaleString('de-DE')} Coins (1.8x Multiplikator)`, inline: false },
                     { name: '💳 Neuer Kontostand', value: `${newBalance.toLocaleString('de-DE')} Coins`, inline: false }
                 );
             } else {
+                // Additional penalty on loss
+                const penalty = betAmount;
+                db.addCoins(userId, -penalty, 'coinflip_penalty', 'Coinflip Strafverlust');
+                const totalLoss = betAmount + penalty;
                 const newBalance = db.getUserCoins(userId).coins;
 
                 embed.addFields(
-                    { name: '💔 Ergebnis', value: `**VERLOREN!**\n-${betAmount.toLocaleString('de-DE')} Coins`, inline: false },
+                    { name: '💔 Ergebnis', value: `**VERLOREN!**\n-${totalLoss.toLocaleString('de-DE')} Coins (1x Einsatz + 1x Strafe = 2x Gesamt)`, inline: false },
                     { name: '💳 Neuer Kontostand', value: `${newBalance.toLocaleString('de-DE')} Coins`, inline: false }
                 );
             }

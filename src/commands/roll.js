@@ -19,7 +19,7 @@ module.exports = {
                 .setRequired(false)
                 .addChoices(
                     { name: '🎲 Standard (2 Würfel)', value: 'standard' },
-                    { name: '🎯 High Roll (1 Würfel, >3 gewinnt)', value: 'high' },
+                    { name: '🎯 High Roll (1 Würfel, 5+ gewinnt 1.5x)', value: 'high' },
                     { name: '🎰 Jackpot (3 Würfel, alle gleich = 10x)', value: 'jackpot' }
                 ))
         .addUserOption(option =>
@@ -75,7 +75,7 @@ module.exports = {
             let modeDescription;
             switch (mode) {
                 case 'high':
-                    modeDescription = '🎯 High Roll (>3 gewinnt)';
+                    modeDescription = '🎯 High Roll (5+ gewinnt)';
                     break;
                 case 'jackpot':
                     modeDescription = '🎰 Jackpot (3 gleiche Würfel)';
@@ -142,9 +142,9 @@ module.exports = {
             switch (mode) {
                 case 'high':
                     result = Math.floor(Math.random() * 6) + 1;
-                    won = result > 3;
-                    multiplier = won ? 1.8 : 0;
-                    description = `🎯 **High Roll Modus**\n\nDu würfelst: **${result}**\n${won ? 'Über 3! Du gewinnst!' : 'Unter 4... Verloren!'}`;
+                    won = result > 4;
+                    multiplier = won ? 1.5 : 0;
+                    description = `🎯 **High Roll Modus**\n\nDu würfelst: **${result}**\n${won ? '5 oder 6! Du gewinnst!' : 'Unter 5... Verloren!'}`;
                     break;
 
                 case 'jackpot':
