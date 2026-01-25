@@ -152,7 +152,7 @@ async function handleHighLowButton(interaction) {
 
     // Correct guess
     gameData.round++;
-    gameData.multiplier += 0.5;
+    gameData.multiplier += 0.4;
     gameData.currentNumber = nextNumber;
 
     // Check if reached max rounds (automatic win)

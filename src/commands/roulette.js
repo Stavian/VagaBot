@@ -12,7 +12,7 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('solo')
-                .setDescription('Überlebe das Magazin! 2 Kugeln, 6 Kammern - Verlust = 5x Einsatz + 60s Timeout!')
+                .setDescription('Überlebe das Magazin! 2 Kugeln, 5 Kammern - Verlust = 5x Einsatz + 60s Timeout!')
                 .addIntegerOption(option =>
                     option.setName('einsatz')
                         .setDescription('Einsatz (Multiplikator +1.0x pro Schuss, Verlust = 5x Einsatz)')
@@ -88,8 +88,8 @@ async function handleSolo(interaction) {
     }
 
     // Create magazine with bullets
-    const chambers = 6;
-    const bullets = 2; // 2 bullets in 6 chambers
+    const chambers = 5;
+    const bullets = 2; // 2 bullets in 5 chambers
     const magazine = Array(chambers).fill('empty');
 
     // Place bullets randomly
@@ -125,7 +125,7 @@ async function handleSolo(interaction) {
 }
 
 async function showSoloGameState(interaction, gameData) {
-    const chamberDisplay = '🔫 ' + Array(6).fill('⚪').map((c, i) =>
+    const chamberDisplay = '🔫 ' + Array(5).fill('⚪').map((c, i) =>
         i < gameData.chambersCleared ? '✅' : '⚪'
     ).join(' ');
 
@@ -135,7 +135,7 @@ async function showSoloGameState(interaction, gameData) {
     const embed = new EmbedBuilder()
         .setColor('#FF4444')
         .setTitle('🔫 Russisches Roulette - Solo')
-        .setDescription(`**Magazin:** ${chamberDisplay}\n**Kammern übrig:** ${gameData.chambersRemaining}/6\n**Kugeln im Magazin:** 2\n\n${gameData.chambersCleared === 0 ? '**Drücke ab oder nimm dein Geld!**' : '**Glück gehabt! Weiter oder auszahlen?**'}`)
+        .setDescription(`**Magazin:** ${chamberDisplay}\n**Kammern übrig:** ${gameData.chambersRemaining}/5\n**Kugeln im Magazin:** 2\n\n${gameData.chambersCleared === 0 ? '**Drücke ab oder nimm dein Geld!**' : '**Glück gehabt! Weiter oder auszahlen?**'}`)
         .addFields(
             { name: '💰 Einsatz', value: `${gameData.betAmount.toLocaleString('de-DE')} Coins`, inline: true },
             { name: '✨ Aktueller Multiplikator', value: `${gameData.multiplier.toFixed(1)}x`, inline: true },
@@ -185,7 +185,7 @@ async function handleStart(interaction) {
     }
 
     // Check daily betting limit
-    const betCheck = db.canBet(userId, betAmount, 1000);
+    const betCheck = db.canBet(userId, betAmount, 500);
     if (!betCheck.canBet) {
         return interaction.reply({
             content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`,
@@ -279,7 +279,7 @@ async function startGame(interaction, gameId) {
 
     while (gameData.alive.length > 1) {
         const currentPlayer = gameData.alive[0];
-        const shot = Math.floor(Math.random() * 6) === 0; // 1/6 chance
+        const shot = Math.floor(Math.random() * 5) === 0; // 1/5 chance (20%)
 
         if (shot) {
             // Player hit - remove from alive list and timeout
@@ -361,7 +361,7 @@ async function handleSoloPull(interaction) {
             const embed = new EmbedBuilder()
                 .setColor('#FF0000')
                 .setTitle('💥 PENG!')
-                .setDescription(`**Du hast eine Kugel erwischt!**\n\n🔫 Kammer ${gameData.currentChamber + 1}/6 hatte eine Kugel!\n⏱️ Bis in 60 Sekunden...`)
+                .setDescription(`**Du hast eine Kugel erwischt!**\n\n🔫 Kammer ${gameData.currentChamber + 1}/5 hatte eine Kugel!\n⏱️ Bis in 60 Sekunden...`)
                 .addFields(
                     { name: '💸 Verlust', value: `-${totalLoss.toLocaleString('de-DE')} Coins (1x Einsatz + 4x Strafe = 5x Gesamt)`, inline: false },
                     { name: '📊 Überlebte Schüsse', value: `${gameData.chambersCleared}`, inline: true },
