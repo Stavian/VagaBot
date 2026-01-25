@@ -12,10 +12,10 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('solo')
-                .setDescription('Überlebe das Magazin! 2 Kugeln, 6 Kammern - Verlust = 2x Einsatz + 60s Timeout!')
+                .setDescription('Überlebe das Magazin! 2 Kugeln, 6 Kammern - Verlust = 5x Einsatz + 60s Timeout!')
                 .addIntegerOption(option =>
                     option.setName('einsatz')
-                        .setDescription('Einsatz (Multiplikator +1.0x pro Schuss, Verlust = 2x Einsatz)')
+                        .setDescription('Einsatz (Multiplikator +1.0x pro Schuss, Verlust = 5x Einsatz)')
                         .setRequired(true)
                         .setMinValue(10)
                         .setMaxValue(100)))
@@ -68,12 +68,12 @@ async function handleSolo(interaction) {
         return interaction.reply({ content: '🛡️ Du bist zu mächtig für dieses Spiel (kann nicht gemuted werden).', ephemeral: true });
     }
 
-    // Check if user has enough coins (need 2x for potential loss)
+    // Check if user has enough coins (need 5x for potential loss)
     const userData = db.getUserCoins(userId);
-    const requiredCoins = betAmount * 2; // Need 2x for bet + potential penalty
+    const requiredCoins = betAmount * 5; // Need 5x for bet + potential penalty
     if (userData.coins < requiredCoins) {
         return interaction.reply({
-            content: `❌ Du hast nicht genug Coins! Du brauchst mindestens ${requiredCoins.toLocaleString('de-DE')} Coins (2x Einsatz für möglichen Verlust).\n💳 Dein Kontostand: ${userData.coins.toLocaleString('de-DE')} Coins`,
+            content: `❌ Du hast nicht genug Coins! Du brauchst mindestens ${requiredCoins.toLocaleString('de-DE')} Coins (5x Einsatz für möglichen Verlust).\n💳 Dein Kontostand: ${userData.coins.toLocaleString('de-DE')} Coins`,
             ephemeral: true
         });
     }
@@ -130,7 +130,7 @@ async function showSoloGameState(interaction, gameData) {
     ).join(' ');
 
     const potentialWin = Math.floor(gameData.betAmount * gameData.multiplier);
-    const potentialLoss = gameData.betAmount * 2; // Total loss if shot
+    const potentialLoss = gameData.betAmount * 5; // Total loss if shot
 
     const embed = new EmbedBuilder()
         .setColor('#FF4444')
@@ -140,9 +140,9 @@ async function showSoloGameState(interaction, gameData) {
             { name: '💰 Einsatz', value: `${gameData.betAmount.toLocaleString('de-DE')} Coins`, inline: true },
             { name: '✨ Aktueller Multiplikator', value: `${gameData.multiplier.toFixed(1)}x`, inline: true },
             { name: '💵 Möglicher Gewinn', value: `${potentialWin.toLocaleString('de-DE')} Coins`, inline: true },
-            { name: '💀 Verlust bei Kugel', value: `-${potentialLoss.toLocaleString('de-DE')} Coins (2x)`, inline: true }
+            { name: '💀 Verlust bei Kugel', value: `-${potentialLoss.toLocaleString('de-DE')} Coins (5x)`, inline: true }
         )
-        .setFooter({ text: 'Jeder überlebte Schuss erhöht den Multiplikator um +1.0x! Kugel = 2x Verlust + 60s Timeout' })
+        .setFooter({ text: 'Jeder überlebte Schuss erhöht den Multiplikator um +1.0x! Kugel = 5x Verlust + 60s Timeout' })
         .setTimestamp();
 
     const row = new ActionRowBuilder()
@@ -185,7 +185,7 @@ async function handleStart(interaction) {
     }
 
     // Check daily betting limit
-    const betCheck = db.canBet(userId, betAmount, 500);
+    const betCheck = db.canBet(userId, betAmount, 1000);
     if (!betCheck.canBet) {
         return interaction.reply({
             content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`,
@@ -349,9 +349,9 @@ async function handleSoloPull(interaction) {
     const currentChamber = gameData.magazine[gameData.currentChamber];
 
     if (currentChamber === 'bullet') {
-        // Hit a bullet - player loses additional bet amount as penalty (total 2x loss)
+        // Hit a bullet - player loses additional bet amount as penalty (total 5x loss)
         try {
-            const penalty = gameData.betAmount; // Additional 1x bet lost
+            const penalty = gameData.betAmount * 4; // Additional 4x bet lost
             db.addCoins(userId, -penalty, 'roulette_solo_penalty', 'Solo Roulette Strafverlust');
 
             await interaction.member.timeout(60 * 1000, 'Verloren beim Russischen Roulette');
@@ -363,7 +363,7 @@ async function handleSoloPull(interaction) {
                 .setTitle('💥 PENG!')
                 .setDescription(`**Du hast eine Kugel erwischt!**\n\n🔫 Kammer ${gameData.currentChamber + 1}/6 hatte eine Kugel!\n⏱️ Bis in 60 Sekunden...`)
                 .addFields(
-                    { name: '💸 Verlust', value: `-${totalLoss.toLocaleString('de-DE')} Coins (${gameData.betAmount}x Einsatz + ${penalty}x Strafe)`, inline: false },
+                    { name: '💸 Verlust', value: `-${totalLoss.toLocaleString('de-DE')} Coins (1x Einsatz + 4x Strafe = 5x Gesamt)`, inline: false },
                     { name: '📊 Überlebte Schüsse', value: `${gameData.chambersCleared}`, inline: true },
                     { name: '💳 Kontostand', value: `${newBalance.toLocaleString('de-DE')} Coins`, inline: true }
                 )
