@@ -1,9 +1,29 @@
+# Dependencies
 node_modules/
+
+# Environment variables (contains sensitive API keys and tokens)
 .env
+
+# Database files
 data/*.db
 data/*.sqlite
+data/*.db-shm
+data/*.db-wal
+
+# Voice quotes audio files
 data/voice-quotes/
+
+# Logs
 logs/
 *.log
+
+# OS files
 .DS_Store
-DOCUMENTATION.md
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Documentation (if you want to exclude it)
+# DOCUMENTATION.md

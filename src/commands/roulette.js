@@ -11,7 +11,13 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('solo')
-                .setDescription('Spiele solo (1/6 Chance auf 60s Timeout)'))
+                .setDescription('Spiele solo (1/6 Chance auf 60s Timeout)')
+                .addIntegerOption(option =>
+                    option.setName('einsatz')
+                        .setDescription('Einsatz (bei Gewinn: 2x zurück, bei Verlust: 5x weg + Timeout)')
+                        .setRequired(true)
+                        .setMinValue(10)
+                        .setMaxValue(50)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('start')
@@ -40,6 +46,9 @@ module.exports = {
 };
 
 async function handleSolo(interaction) {
+    const betAmount = interaction.options.getInteger('einsatz');
+    const userId = interaction.user.id;
+
     // Check if the bot can actually timeout members
     if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {
         return interaction.reply({ content: '❌ Ich habe keine Berechtigung, Mitglieder stummzuschalten (Moderate Members).', ephemeral: true });
@@ -50,18 +59,47 @@ async function handleSolo(interaction) {
         return interaction.reply({ content: '🛡️ Du bist zu mächtig für dieses Spiel (kann nicht gemuted werden).', ephemeral: true });
     }
 
+    // Check if user has enough coins (need 5x for potential loss)
+    const userData = db.getUserCoins(userId);
+    const lossAmount = betAmount * 5;
+    if (userData.coins < lossAmount) {
+        return interaction.reply({
+            content: `❌ Du hast nicht genug Coins! Du brauchst mindestens ${lossAmount.toLocaleString('de-DE')} Coins (5x Einsatz für möglichen Verlust).\n💳 Dein Kontostand: ${userData.coins.toLocaleString('de-DE')} Coins`,
+            ephemeral: true
+        });
+    }
+
+    // Check daily betting limit
+    const betCheck = db.canBet(userId, betAmount, 500);
+    if (!betCheck.canBet) {
+        return interaction.reply({
+            content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`,
+            ephemeral: true
+        });
+    }
+
+    // Add to daily bet limit
+    db.addToBetLimit(userId, betAmount);
+
     const chance = Math.floor(Math.random() * 6); // 0 to 5
 
     if (chance === 0) {
+        // Player loses - deduct 5x coins and timeout
         try {
+            db.addCoins(userId, -lossAmount, 'roulette_solo_loss', 'Solo Roulette Verlust');
             await interaction.member.timeout(60 * 1000, 'Verloren beim Russischen Roulette');
-            await interaction.reply('💥 **PENG!** Das war die Kugel. Bis in 60 Sekunden!');
+            const newBalance = db.getUserCoins(userId).coins;
+            await interaction.reply(`💥 **PENG!** Das war die Kugel. Bis in 60 Sekunden!\n💸 **-${lossAmount.toLocaleString('de-DE')} Coins** (5x Verlust)\n💳 Neuer Kontostand: ${newBalance.toLocaleString('de-DE')} Coins`);
         } catch (error) {
             console.error('Roulette error:', error);
             await interaction.reply({ content: 'Fehler beim Ausführen des Timeouts.', ephemeral: true });
         }
     } else {
-        await interaction.reply('🔫 *Klick*... Glück gehabt! Die Kammer war leer.');
+        // Player wins - give 2x bet amount
+        const winAmount = betAmount * 2;
+        db.addCoins(userId, winAmount, 'roulette_solo_win', 'Solo Roulette Gewinn');
+        const newBalance = db.getUserCoins(userId).coins;
+        await interaction.reply(`🔫 *Klick*... Glück gehabt! Die Kammer war leer.\n💰 **+${winAmount.toLocaleString('de-DE')} Coins**\n💳 Neuer Kontostand: ${newBalance.toLocaleString('de-DE')} Coins`);
     }
 }
 
@@ -80,6 +118,15 @@ async function handleStart(interaction) {
     if (userData.coins < betAmount) {
         return interaction.reply({
             content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins} Coins.`,
+            ephemeral: true
+        });
+    }
+
+    // Check daily betting limit
+    const betCheck = db.canBet(userId, betAmount, 500);
+    if (!betCheck.canBet) {
+        return interaction.reply({
+            content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`,
             ephemeral: true
         });
     }
@@ -155,9 +202,10 @@ async function startGame(interaction, gameId) {
     const gameData = activeGames.get(gameId);
     if (!gameData || gameData.status !== 'waiting') return;
 
-    // Deduct coins from all players
+    // Deduct coins from all players and add to daily bet limit
     for (const player of gameData.players) {
         db.addCoins(player.id, -gameData.betAmount, 'roulette_game', 'Russisches Roulette Einsatz');
+        db.addToBetLimit(player.id, gameData.betAmount);
     }
 
     gameData.status = 'playing';
@@ -256,6 +304,15 @@ async function handleRouletteButton(interaction, gameId, action) {
         if (userData.coins < gameData.betAmount) {
             return interaction.reply({
                 content: `❌ Du hast nicht genug Coins! Du brauchst ${gameData.betAmount.toLocaleString('de-DE')} Coins.`,
+                ephemeral: true
+            });
+        }
+
+        // Check daily betting limit
+        const betCheck = db.canBet(interaction.user.id, gameData.betAmount, 500);
+        if (!betCheck.canBet) {
+            return interaction.reply({
+                content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`,
                 ephemeral: true
             });
         }

@@ -181,6 +181,17 @@ db.exec(`
     )
 `);
 
+// Daily Betting Limit System
+db.exec(`
+    CREATE TABLE IF NOT EXISTS daily_bet_limits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        bet_date DATE NOT NULL,
+        total_bet_amount INTEGER DEFAULT 0,
+        UNIQUE (user_id, bet_date)
+    )
+`);
+
 // Migration: Remove role_id if it exists (simplest way is to ignore for now or recreate, 
 // but since we are dev, we just ensure the new structure works for new entries. 
 // Ideally we would migrate data, but for this switch we'll just handle new structure).
@@ -751,5 +762,36 @@ module.exports = {
             const refundAmount = participant.ticket_count * 10;
             module.exports.addCoins(participant.user_id, refundAmount, 'lottery_refund', 'Lotterie zurückgesetzt - Rückerstattung');
         }
+    },
+
+    // Daily Betting Limit System
+    getDailyBetAmount: (userId) => {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const stmt = db.prepare('SELECT total_bet_amount FROM daily_bet_limits WHERE user_id = ? AND bet_date = ?');
+        const result = stmt.get(userId, today);
+        return result ? result.total_bet_amount : 0;
+    },
+    addToBetLimit: (userId, amount) => {
+        const today = new Date().toISOString().split('T')[0];
+        const stmt = db.prepare('INSERT INTO daily_bet_limits (user_id, bet_date, total_bet_amount) VALUES (?, ?, ?) ON CONFLICT(user_id, bet_date) DO UPDATE SET total_bet_amount = total_bet_amount + ?');
+        return stmt.run(userId, today, amount, amount);
+    },
+    canBet: (userId, amount, dailyLimit = 500) => {
+        const currentBetAmount = module.exports.getDailyBetAmount(userId);
+        const newTotal = currentBetAmount + amount;
+        if (newTotal > dailyLimit) {
+            return {
+                canBet: false,
+                currentAmount: currentBetAmount,
+                remainingAmount: Math.max(0, dailyLimit - currentBetAmount),
+                dailyLimit: dailyLimit
+            };
+        }
+        return {
+            canBet: true,
+            currentAmount: currentBetAmount,
+            remainingAmount: dailyLimit - newTotal,
+            dailyLimit: dailyLimit
+        };
     }
 };
