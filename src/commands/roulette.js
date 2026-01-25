@@ -3,6 +3,7 @@ const db = require('../database');
 
 // Store active games
 const activeGames = new Map();
+const soloGames = new Map(); // Store solo roulette games
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -11,13 +12,13 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('solo')
-                .setDescription('Spiele solo (1/6 Chance auf 60s Timeout)')
+                .setDescription('Überlebe das Magazin! 2 Kugeln, 6 Kammern - Multiplikator steigt mit jedem Schuss!')
                 .addIntegerOption(option =>
                     option.setName('einsatz')
-                        .setDescription('Einsatz (bei Gewinn: 2x zurück, bei Verlust: 5x weg + Timeout)')
+                        .setDescription('Einsatz (Multiplikator +1.0x pro überlebtem Schuss)')
                         .setRequired(true)
                         .setMinValue(10)
-                        .setMaxValue(50)))
+                        .setMaxValue(100)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('start')
@@ -49,6 +50,14 @@ async function handleSolo(interaction) {
     const betAmount = interaction.options.getInteger('einsatz');
     const userId = interaction.user.id;
 
+    // Check if user already has an active solo game
+    if (soloGames.has(userId)) {
+        return interaction.reply({
+            content: '❌ Du hast bereits ein aktives Solo-Roulette Spiel!',
+            ephemeral: true
+        });
+    }
+
     // Check if the bot can actually timeout members
     if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {
         return interaction.reply({ content: '❌ Ich habe keine Berechtigung, Mitglieder stummzuschalten (Moderate Members).', ephemeral: true });
@@ -59,12 +68,11 @@ async function handleSolo(interaction) {
         return interaction.reply({ content: '🛡️ Du bist zu mächtig für dieses Spiel (kann nicht gemuted werden).', ephemeral: true });
     }
 
-    // Check if user has enough coins (need 5x for potential loss)
+    // Check if user has enough coins
     const userData = db.getUserCoins(userId);
-    const lossAmount = betAmount * 5;
-    if (userData.coins < lossAmount) {
+    if (userData.coins < betAmount) {
         return interaction.reply({
-            content: `❌ Du hast nicht genug Coins! Du brauchst mindestens ${lossAmount.toLocaleString('de-DE')} Coins (5x Einsatz für möglichen Verlust).\n💳 Dein Kontostand: ${userData.coins.toLocaleString('de-DE')} Coins`,
+            content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins.toLocaleString('de-DE')} Coins.`,
             ephemeral: true
         });
     }
@@ -78,28 +86,79 @@ async function handleSolo(interaction) {
         });
     }
 
-    // Add to daily bet limit
+    // Create magazine with bullets
+    const chambers = 6;
+    const bullets = 2; // 2 bullets in 6 chambers
+    const magazine = Array(chambers).fill('empty');
+
+    // Place bullets randomly
+    const bulletPositions = [];
+    while (bulletPositions.length < bullets) {
+        const pos = Math.floor(Math.random() * chambers);
+        if (!bulletPositions.includes(pos)) {
+            bulletPositions.push(pos);
+            magazine[pos] = 'bullet';
+        }
+    }
+
+    // Deduct bet and add to daily limit
+    db.addCoins(userId, -betAmount, 'roulette_solo_bet', 'Solo Roulette Einsatz');
     db.addToBetLimit(userId, betAmount);
 
-    const chance = Math.floor(Math.random() * 6); // 0 to 5
+    // Create game state
+    const gameData = {
+        userId,
+        betAmount,
+        magazine,
+        bullets,
+        currentChamber: 0,
+        chambersRemaining: chambers,
+        multiplier: 0.5, // Start at 0.5x
+        chambersCleared: 0
+    };
 
-    if (chance === 0) {
-        // Player loses - deduct 5x coins and timeout
-        try {
-            db.addCoins(userId, -lossAmount, 'roulette_solo_loss', 'Solo Roulette Verlust');
-            await interaction.member.timeout(60 * 1000, 'Verloren beim Russischen Roulette');
-            const newBalance = db.getUserCoins(userId).coins;
-            await interaction.reply(`💥 **PENG!** Das war die Kugel. Bis in 60 Sekunden!\n💸 **-${lossAmount.toLocaleString('de-DE')} Coins** (5x Verlust)\n💳 Neuer Kontostand: ${newBalance.toLocaleString('de-DE')} Coins`);
-        } catch (error) {
-            console.error('Roulette error:', error);
-            await interaction.reply({ content: 'Fehler beim Ausführen des Timeouts.', ephemeral: true });
-        }
+    soloGames.set(userId, gameData);
+
+    // Show starting state
+    await showSoloGameState(interaction, gameData);
+}
+
+async function showSoloGameState(interaction, gameData) {
+    const chamberDisplay = '🔫 ' + Array(6).fill('⚪').map((c, i) =>
+        i < gameData.chambersCleared ? '✅' : '⚪'
+    ).join(' ');
+
+    const potentialWin = Math.floor(gameData.betAmount * gameData.multiplier);
+
+    const embed = new EmbedBuilder()
+        .setColor('#FF4444')
+        .setTitle('🔫 Russisches Roulette - Solo')
+        .setDescription(`**Magazin:** ${chamberDisplay}\n**Kammern übrig:** ${gameData.chambersRemaining}/6\n**Kugeln im Magazin:** 2\n\n${gameData.chambersCleared === 0 ? '**Drücke ab oder nimm dein Geld!**' : '**Glück gehabt! Weiter oder auszahlen?**'}`)
+        .addFields(
+            { name: '💰 Einsatz', value: `${gameData.betAmount.toLocaleString('de-DE')} Coins`, inline: true },
+            { name: '✨ Aktueller Multiplikator', value: `${gameData.multiplier.toFixed(1)}x`, inline: true },
+            { name: '💵 Möglicher Gewinn', value: `${potentialWin.toLocaleString('de-DE')} Coins`, inline: true }
+        )
+        .setFooter({ text: 'Jeder überlebte Schuss erhöht den Multiplikator um +1.0x!' })
+        .setTimestamp();
+
+    const row = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId(`roulette_solo_pull_${gameData.userId}`)
+                .setLabel('🔫 Abdrücken')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId(`roulette_solo_cashout_${gameData.userId}`)
+                .setLabel('💰 Auszahlen')
+                .setStyle(ButtonStyle.Success)
+                .setDisabled(gameData.chambersCleared === 0) // Can't cash out on first round
+        );
+
+    if (interaction.replied || interaction.deferred) {
+        await interaction.editReply({ embeds: [embed], components: [row] });
     } else {
-        // Player wins - give 2x bet amount
-        const winAmount = betAmount * 2;
-        db.addCoins(userId, winAmount, 'roulette_solo_win', 'Solo Roulette Gewinn');
-        const newBalance = db.getUserCoins(userId).coins;
-        await interaction.reply(`🔫 *Klick*... Glück gehabt! Die Kammer war leer.\n💰 **+${winAmount.toLocaleString('de-DE')} Coins**\n💳 Neuer Kontostand: ${newBalance.toLocaleString('de-DE')} Coins`);
+        await interaction.reply({ embeds: [embed], components: [row] });
     }
 }
 
@@ -270,6 +329,111 @@ async function startGame(interaction, gameId) {
     });
 }
 
+// Handle solo game button actions
+async function handleSoloPull(interaction) {
+    const userId = interaction.user.id;
+    const gameData = soloGames.get(userId);
+
+    if (!gameData) {
+        return interaction.update({
+            content: '⚠️ Spiel nicht gefunden oder bereits beendet.',
+            embeds: [],
+            components: []
+        });
+    }
+
+    // Check current chamber
+    const currentChamber = gameData.magazine[gameData.currentChamber];
+
+    if (currentChamber === 'bullet') {
+        // Hit a bullet - player loses
+        try {
+            await interaction.member.timeout(60 * 1000, 'Verloren beim Russischen Roulette');
+            const newBalance = db.getUserCoins(userId).coins;
+
+            const embed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setTitle('💥 PENG!')
+                .setDescription(`**Du hast eine Kugel erwischt!**\n\n🔫 Kammer ${gameData.currentChamber + 1}/6 hatte eine Kugel!\n⏱️ Bis in 60 Sekunden...`)
+                .addFields(
+                    { name: '💸 Verlust', value: `-${gameData.betAmount.toLocaleString('de-DE')} Coins`, inline: true },
+                    { name: '📊 Überlebte Schüsse', value: `${gameData.chambersCleared}`, inline: true },
+                    { name: '💳 Kontostand', value: `${newBalance.toLocaleString('de-DE')} Coins`, inline: true }
+                )
+                .setTimestamp();
+
+            soloGames.delete(userId);
+            await interaction.update({ embeds: [embed], components: [] });
+        } catch (error) {
+            console.error('Timeout error:', error);
+            await interaction.update({ content: 'Fehler beim Timeout.', embeds: [], components: [] });
+        }
+    } else {
+        // Survived - increase multiplier
+        gameData.currentChamber++;
+        gameData.chambersRemaining--;
+        gameData.chambersCleared++;
+        gameData.multiplier += 1.0; // Increase by 1.0x each round
+
+        // Check if all chambers cleared (impossible to lose)
+        if (gameData.chambersRemaining === gameData.bullets) {
+            // Auto cash out - only bullets left
+            const winAmount = Math.floor(gameData.betAmount * gameData.multiplier);
+            db.addCoins(userId, winAmount, 'roulette_solo_win', 'Solo Roulette Gewinn (Vollständig)');
+            const newBalance = db.getUserCoins(userId).coins;
+
+            const embed = new EmbedBuilder()
+                .setColor('#00FF00')
+                .setTitle('🎉 PERFEKT! Alle sicheren Kammern überlebt!')
+                .setDescription(`**Du hast ${gameData.chambersCleared} Kammern überlebt!**\n\nNur noch Kugeln übrig - automatische Auszahlung!`)
+                .addFields(
+                    { name: '✨ Multiplikator', value: `${gameData.multiplier.toFixed(1)}x`, inline: true },
+                    { name: '🎁 Gewinn', value: `+${winAmount.toLocaleString('de-DE')} Coins`, inline: true },
+                    { name: '💳 Kontostand', value: `${newBalance.toLocaleString('de-DE')} Coins`, inline: true }
+                )
+                .setTimestamp();
+
+            soloGames.delete(userId);
+            await interaction.update({ embeds: [embed], components: [] });
+        } else {
+            // Continue game
+            await interaction.deferUpdate();
+            await showSoloGameState(interaction, gameData);
+        }
+    }
+}
+
+async function handleSoloCashout(interaction) {
+    const userId = interaction.user.id;
+    const gameData = soloGames.get(userId);
+
+    if (!gameData) {
+        return interaction.update({
+            content: '⚠️ Spiel nicht gefunden oder bereits beendet.',
+            embeds: [],
+            components: []
+        });
+    }
+
+    const winAmount = Math.floor(gameData.betAmount * gameData.multiplier);
+    db.addCoins(userId, winAmount, 'roulette_solo_win', 'Solo Roulette Gewinn (Cashout)');
+    const newBalance = db.getUserCoins(userId).coins;
+
+    const embed = new EmbedBuilder()
+        .setColor('#FFD700')
+        .setTitle('💰 Ausgezahlt!')
+        .setDescription(`**Du hast rechtzeitig ausgestiegen!**\n\n🎯 ${gameData.chambersCleared} Kammern überlebt`)
+        .addFields(
+            { name: '✨ Multiplikator', value: `${gameData.multiplier.toFixed(1)}x`, inline: true },
+            { name: '🎁 Gewinn', value: `+${winAmount.toLocaleString('de-DE')} Coins`, inline: true },
+            { name: '💳 Kontostand', value: `${newBalance.toLocaleString('de-DE')} Coins`, inline: true }
+        )
+        .setTimestamp();
+
+    soloGames.delete(userId);
+    await interaction.update({ embeds: [embed], components: [] });
+}
+
 // Handle button interactions
 async function handleRouletteButton(interaction, gameId, action) {
     const gameData = activeGames.get(gameId);
@@ -391,3 +555,5 @@ async function handleRouletteButton(interaction, gameId, action) {
 }
 
 module.exports.handleRouletteButton = handleRouletteButton;
+module.exports.handleSoloPull = handleSoloPull;
+module.exports.handleSoloCashout = handleSoloCashout;

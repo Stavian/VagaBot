@@ -91,20 +91,32 @@ client.on(Events.InteractionCreate, async interaction => {
                 }
             }
             return;
-        } else if (interaction.customId.startsWith('roulette_join_') || interaction.customId.startsWith('roulette_start_') || interaction.customId.startsWith('roulette_cancel_')) {
+        } else if (interaction.customId.startsWith('roulette_')) {
             // Roulette game button handler
-            const parts = interaction.customId.split('_');
-            const action = parts[1]; // 'join', 'start', or 'cancel'
-            const gameId = parts.slice(2).join('_'); // Everything after action
             const rouletteCommand = require('./commands/roulette');
-            if (rouletteCommand.handleRouletteButton) {
-                try {
-                    await rouletteCommand.handleRouletteButton(interaction, gameId, action);
-                } catch (error) {
-                    console.error('Roulette button error:', error);
-                    if (!interaction.replied && !interaction.deferred) {
-                        await interaction.reply({ content: 'Fehler beim Verarbeiten deiner Aktion.', ephemeral: true });
+            try {
+                const parts = interaction.customId.split('_');
+                const action = parts[1]; // 'join', 'start', 'cancel', 'solo'
+
+                if (action === 'solo') {
+                    // Solo roulette buttons
+                    const soloAction = parts[2]; // 'pull' or 'cashout'
+                    if (soloAction === 'pull' && rouletteCommand.handleSoloPull) {
+                        await rouletteCommand.handleSoloPull(interaction);
+                    } else if (soloAction === 'cashout' && rouletteCommand.handleSoloCashout) {
+                        await rouletteCommand.handleSoloCashout(interaction);
                     }
+                } else {
+                    // Multiplayer roulette buttons
+                    const gameId = parts.slice(2).join('_');
+                    if (rouletteCommand.handleRouletteButton) {
+                        await rouletteCommand.handleRouletteButton(interaction, gameId, action);
+                    }
+                }
+            } catch (error) {
+                console.error('Roulette button error:', error);
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ content: 'Fehler beim Verarbeiten deiner Aktion.', ephemeral: true });
                 }
             }
             return;

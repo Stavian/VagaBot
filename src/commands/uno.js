@@ -342,6 +342,26 @@ async function processTurn(interaction, gameId) {
     const gameData = activeGames.get(gameId);
     if (!gameData || gameData.status !== 'playing') return;
 
+    // Clean up old messages (keep only welcome message and game board)
+    try {
+        const channel = await interaction.client.channels.fetch(gameData.channelId);
+        const messages = await channel.messages.fetch({ limit: 100 });
+        const messagesToDelete = messages.filter(msg =>
+            msg.id !== gameData.gameMessageId && // Keep game board
+            !msg.embeds.some(e => e.title === '🎴 VagaUNO - Willkommen!') && // Keep welcome message
+            msg.createdTimestamp > Date.now() - 14 * 24 * 60 * 60 * 1000 // Only messages newer than 14 days can be bulk deleted
+        );
+
+        if (messagesToDelete.size > 0) {
+            await channel.bulkDelete(messagesToDelete, true).catch(() => {
+                // Fallback: delete individually if bulk delete fails
+                messagesToDelete.forEach(msg => msg.delete().catch(() => {}));
+            });
+        }
+    } catch (error) {
+        console.error('Error cleaning messages:', error);
+    }
+
     const currentPlayer = gameData.players[gameData.currentPlayerIndex];
     const playableIndices = getPlayableIndices(currentPlayer.hand, gameData.currentCard);
 
