@@ -4,7 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VagaBot** - A feature-rich German Discord bot for small gaming communities. Combines quote management, economy/betting system, gaming stats tracking (Tracker.gg integration), mini-games, and LFG squad assembly.
+**VagaBot** - A feature-rich German Discord bot for small gaming communities. Combines quote management, economy/betting system, mini-games, and LFG squad assembly.
+
+**NOTE:** External gaming API integrations (Tracker.gg, Steam, Arc Raiders) are currently **DISABLED** - files renamed to `.disabled` extension.
+
+## Active vs Disabled Features
+
+### ✅ Active Commands (21 total)
+- **Quotes:** `/zitat`, `/fail`, `/voice-zitat`, `/voice-recording`, `/manage_quote`, `/suche`, `/tags`
+- **Economy:** `/balance`, `/balance-admin`, `/daily`, `/coinflip`, `/roll`, `/roulette`, `/highlow`, `/wette`
+- **Gaming/LFG:** `/link`, `/abo`, `/assemble`
+- **Rankings:** `/ranking` (quotes & coins only)
+- **Utilities:** `/info`, `/config`, `/schedule`, `/ping`, `/uno`
+
+### ❌ Disabled Commands (2 total)
+- **`/stats`** (`stats.js.disabled`) - Steam, Tracker.gg gaming stats
+- **`/arcraiders`** (`arcraiders.js.disabled`) - Arc Raiders extraction tracking & leaderboard
+
+### 🔧 Disabled Utilities (4 files)
+- `src/utils/steam.js.disabled` - Steam API
+- `src/utils/tracker.js.disabled` - Tracker.gg API
+- `src/utils/arcraiders.js.disabled` - Arc Raiders API
+- `src/utils/monitor.js.disabled` - Background gaming monitor
+
+**To Re-enable:** Rename `.disabled` files to `.js`, uncomment lines 6 & 396 in `src/index.js`, redeploy commands.
 
 ## Common Commands
 
@@ -48,10 +71,12 @@ Main Discord client that:
 **15 Tables:**
 - User data: `user_coins`, `coin_transactions`, `user_links`
 - Quotes: `quotes`, `voice_quotes`, `allowed_tags`
-- Gaming: `games`, `subscriptions`, `last_matches`, `arc_extractions`
+- Gaming: `games`, `subscriptions`, `last_matches` ~~`arc_extractions`~~ (DISABLED)
 - Betting: `bets`, `bet_placements`
 - Mini-games: `lottery_tickets`
 - Config: `config`
+
+**Note:** `last_matches` and `arc_extractions` tables exist but are not actively used due to disabled monitor/API features.
 
 **Key Patterns:**
 - Composite primary keys (e.g., user_id + platform for user_links)
@@ -71,7 +96,7 @@ export default {
 
 **Subcommands** used for complex features:
 - `/wette` - 5 subcommands (create, place, list, info, resolve)
-- `/arcraiders` - 4 subcommands (link, unlink, stats, leaderboard)
+- ~~`/arcraiders`~~ - DISABLED (4 subcommands: link, unlink, stats, leaderboard)
 
 ### Button Interaction Patterns
 
@@ -95,18 +120,18 @@ customId: `info_economy`
 
 All button handlers live in main `interactionCreate` event with prefix checks.
 
-### Automated Gaming Monitor (src/utils/monitor.js)
+### Automated Gaming Monitor (src/utils/monitor.js.disabled)
 
-**Background job** (runs every 10 minutes):
-- Checks for new matches across 13 game/platform combinations
-- Compares current match ID vs last_matches table
-- Auto-posts memes:
-  - K/D < 0.5 → Trash talk with GIF
-  - K/D > 3.0 → MVP praise with GIF
-- Auto-resolves K/D prediction bets
-- Tracks Arc Raiders extractions with coin rewards
+**STATUS: DISABLED** - File renamed to `.disabled` extension and not loaded by bot.
 
-**Requires:** `TRN_API_KEY` in .env (disables if missing)
+~~**Background job** (runs every 10 minutes):~~
+- ~~Checks for new matches across 13 game/platform combinations~~
+- ~~Compares current match ID vs last_matches table~~
+- ~~Auto-posts memes (K/D < 0.5 → Trash talk, K/D > 3.0 → MVP praise)~~
+- ~~Auto-resolves K/D prediction bets~~
+- ~~Tracks Arc Raiders extractions with coin rewards~~
+
+**Note:** Monitor is disabled in `src/index.js` (lines 6, 396). To re-enable: rename `.disabled` files back to `.js` and uncomment those lines.
 
 ### Economy System
 
@@ -114,7 +139,7 @@ All button handlers live in main `interactionCreate` event with prefix checks.
 
 **Coin Sources:**
 - Daily claims: 50 base + streak bonus (up to +100)
-- Arc Raiders extractions: 50-300+ coins (based on kills, loot rarity, survival time)
+- ~~Arc Raiders extractions: 50-300+ coins~~ (DISABLED)
 - Winning bets: Proportional pool distribution
 - Mini-game wins: Variable based on game
 
@@ -126,24 +151,21 @@ All button handlers live in main `interactionCreate` event with prefix checks.
 **Transaction Logging:**
 All coin operations logged to `coin_transactions` table with reason field.
 
-### Gaming Integration
+### Gaming Integration (DISABLED)
 
-**Supported Platforms:**
-- Rainbow Six Siege (PC/PSN/Xbox)
-- Battlefield 6 (PC/PSN/Xbox)
-- For Honor (PC/PSN/Xbox)
-- Destiny 2 (PC/PSN/Xbox)
-- Valorant (Riot ID)
+**STATUS: All external gaming API integrations are DISABLED**
 
-**Tracker.gg API** (`src/utils/tracker.js`):
-- Fetches match history and player stats
-- Rate limiting handled gracefully
-- Error states don't crash monitor loop
+**Disabled Commands:**
+- `/stats` → `stats.js.disabled` - Gaming stats from Steam/Tracker.gg
+- `/arcraiders` → `arcraiders.js.disabled` - Arc Raiders extraction tracking
 
-**Arc Raiders API** (`src/utils/arcraiders.js`):
-- Extraction tracking with detailed stats
-- Coin calculation based on performance
-- Leaderboard by legendary items + success rate
+**Disabled Utilities:**
+- `src/utils/tracker.js.disabled` - Tracker.gg API (Siege, BF6, For Honor, Destiny 2, Valorant)
+- `src/utils/steam.js.disabled` - Steam API integration
+- `src/utils/arcraiders.js.disabled` - Arc Raiders API integration
+- `src/utils/monitor.js.disabled` - Background gaming monitor
+
+**Note:** `/link` command still exists for storing user platform IDs locally (no API calls), used by LFG system.
 
 ### LFG (Squad Assembly) System
 
@@ -181,16 +203,12 @@ offline = 0 points
 **Bet Types:**
 1. Match outcome (Win/Loss/Draw)
 2. K/D prediction (over/under threshold)
-3. Arc Raiders extraction success
+3. ~~Arc Raiders extraction success~~ (DISABLED)
 4. Custom (manual resolution)
 
-**Auto-Resolution:**
-- Monitor detects match completion
-- Resolves K/D bets when stats available
-- Distributes winnings proportionally
-
-**Manual Resolution:**
-- Admin-only `/wette resolve` command
+**Resolution:**
+- ~~Auto-Resolution: Monitor detects match completion~~ (DISABLED - monitor inactive)
+- **Manual Resolution Only:** Admin-only `/wette resolve` command
 - Specifies winning outcome
 - Refunds on cancelled bets
 
@@ -263,10 +281,13 @@ Set via `/config` - embeds full error stack traces
 DISCORD_TOKEN=<bot_token>                    # Required
 CLIENT_ID=<application_id>                   # Required
 GUILD_ID=<server_id>                         # Optional (for guild commands)
-TRN_API_KEY=<tracker_api_key>                # Optional (disables monitor if missing)
-ARC_RAIDERS_API_KEY=<arc_api_key>            # Required for Arc Raiders features
-ARC_RAIDERS_API_URL=https://api.arcraiders.com/v1  # Optional (default shown)
+TRN_API_KEY=<tracker_api_key>                # NOT USED (tracker.js disabled)
+STEAM_API_KEY=<steam_api_key>                # NOT USED (steam.js disabled)
+ARC_RAIDERS_API_KEY=<arc_api_key>            # NOT USED (arcraiders.js disabled)
+ARC_RAIDERS_API_URL=https://api.arcraiders.com/v1  # NOT USED (arcraiders.js disabled)
 ```
+
+**Note:** API keys remain in `.env` but are not loaded by disabled modules.
 
 ## Database Config Keys
 

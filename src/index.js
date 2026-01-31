@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits, Collection, Events, Partials, EmbedBuilder } 
 const fs = require('node:fs');
 const path = require('node:path');
 const db = require('./database'); // Import database
-const { startMonitoring } = require('./utils/monitor');
+// const { startMonitoring } = require('./utils/monitor'); // DISABLED - External API monitoring
 
 const client = new Client({
     intents: [
@@ -226,7 +226,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setColor('#4ECDC4')
                 .setTitle('🏆 Rankings & Weitere Befehle')
                 .addFields(
-                    { name: 'Rankings', value: '`/ranking` – Hall of Shame, Meist zitiert, Top Snitch, Reichste User\n`/arcraiders leaderboard` – Top Extraktoren', inline: false },
+                    { name: 'Rankings', value: '`/ranking` – Hall of Shame, Meist zitiert, Top Snitch, Reichste User', inline: false },
                     { name: 'Utilities', value: '`/tags` – Tag-Verwaltung\n`/suche` – Zitate durchsuchen\n`/schedule` – Event-Umfragen\n`/roulette` – Russisches Roulette\n`/ping` – Bot-Latenz\n`/config` – Admin-Einstellungen', inline: false }
                 )
                 .setFooter({ text: 'VagaBot v2.0 – Klicke 🏠 für Hauptmenü' })
@@ -236,8 +236,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setColor('#FFD93D')
                 .setTitle('💰 Economy & Wetten')
                 .addFields(
-                    { name: 'Coins verdienen', value: '`/daily` – 50+ Coins täglich (Streak-Bonus bis +100)\n`/balance` – Kontostand prüfen\n\n**Weitere Quellen:**\n• Arc Raiders: 50-300+ Coins/Extraction\n• Wetten gewinnen\n• Startguthaben: 100 Coins', inline: false },
-                    { name: 'Wett-System', value: '`/wette erstellen` – Neue Wette\n`/wette platzieren` – Coins setzen\n`/wette liste` – Aktive Wetten\n`/wette info` – Details\n`/wette beenden` – Auflösen\n\n**Typen:** Match, K/D, Extraction, Custom', inline: false }
+                    { name: 'Coins verdienen', value: '`/daily` – 50+ Coins täglich (Streak-Bonus bis +100)\n`/balance` – Kontostand prüfen\n\n**Weitere Quellen:**\n• Wetten gewinnen\n• Startguthaben: 100 Coins', inline: false },
+                    { name: 'Wett-System', value: '`/wette erstellen` – Neue Wette\n`/wette platzieren` – Coins setzen\n`/wette liste` – Aktive Wetten\n`/wette info` – Details\n`/wette beenden` – Auflösen\n\n**Typen:** Match, K/D, Custom', inline: false }
                 )
                 .setFooter({ text: 'VagaBot v2.0 – Klicke 🏠 für Hauptmenü' })
                 .setTimestamp();
@@ -246,10 +246,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setColor('#95E1D3')
                 .setTitle('🎮 Gaming & LFG')
                 .addFields(
-                    { name: 'Account-Linking', value: '`/link` – Steam, Uplay, Origin, PSN, Xbox\n`/arcraiders link` – Arc Raiders\n`/stats` – Gaming-Stats anzeigen', inline: true },
-                    { name: 'Squad & LFG', value: '`/assemble` – Squad-Anfrage\n`/abo` – Spiele-Abos verwalten', inline: true },
-                    { name: '📈 Live-Monitoring', value: '• Match-Erkennung (10min)\n• Arc Raiders Tracking\n• Coin-Belohnungen\n• MVP-Alarm (K/D > 3.0)\n• Trash-Talk (K/D < 0.5)', inline: false },
-                    { name: '🎯 Arc Raiders Rewards', value: '50 Coins Basis + 5/Kill + 10/Rare + 25/Epic + 50/Legendary + 1/min', inline: false }
+                    { name: 'Account-Linking', value: '`/link` – Steam, Uplay, Origin, PSN, Xbox', inline: true },
+                    { name: 'Squad & LFG', value: '`/assemble` – Squad-Anfrage\n`/abo` – Spiele-Abos verwalten', inline: true }
                 )
                 .setFooter({ text: 'VagaBot v2.0 – Klicke 🏠 für Hauptmenü' })
                 .setTimestamp();
@@ -258,8 +256,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setColor('#6C5CE7')
                 .setTitle('💡 Quick Tips')
                 .addFields(
-                    { name: '🔥 Coins maximieren', value: '• `/daily` jeden Tag (Streak-Bonus!)\n• Arc Raiders spielen\n• Klug wetten', inline: true },
-                    { name: '🎮 Account-Setup', value: '• `/link` für Stats\n• `/arcraiders link` für Coins\n• `/abo` für LFG-Pings', inline: true },
+                    { name: '🔥 Coins maximieren', value: '• `/daily` jeden Tag (Streak-Bonus!)\n• Klug wetten', inline: true },
+                    { name: '🎮 Account-Setup', value: '• `/link` für Account-Linking\n• `/abo` für LFG-Pings', inline: true },
                     { name: '🎙️ Voice-Recording', value: '• `/voice-recording start` im Channel\n• Lustige Momente passieren\n• `/voice-zitat speichern` danach\n• 30s Audio automatisch gespeichert!', inline: false }
                 )
                 .setFooter({ text: 'VagaBot v2.0 – Klicke 🏠 für Hauptmenü' })
@@ -393,7 +391,7 @@ client.once(Events.ClientReady, c => {
     });
     console.log('[Status] Bot status set to "Passt auf!"');
 
-    startMonitoring(c);
+    // startMonitoring(c); // DISABLED - External API monitoring
 });
 
 // Handle uncaught errors
