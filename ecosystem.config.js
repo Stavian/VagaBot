@@ -9,7 +9,7 @@ module.exports = {
 
     // Auto-restart policies
     watch: false, // Set to true if you want PM2 to restart on file changes
-    max_memory_restart: '350M', // Restart if memory exceeds 350MB (container limit is 512MB)
+    max_memory_restart: '400M', // Restart if memory exceeds 400MB (container limit is 512MB)
 
     // Restart behavior
     autorestart: true,
