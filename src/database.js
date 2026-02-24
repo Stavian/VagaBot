@@ -431,6 +431,17 @@ module.exports = {
         }
         return user;
     },
+    // Ensure Finn Wegbier has a proper coin balance
+    ensureFinnBalance: (finnId, startingCoins = 5000) => {
+        if (!finnId) return null;
+        const user = module.exports.getUserCoins(finnId);
+        // If Finn has less than 100 coins (the default starting amount), top up
+        if (user.coins < 100) {
+            const topUp = startingCoins - user.coins;
+            module.exports.addCoins(finnId, topUp, 'finn_topup', 'Finn Wegbier Startguthaben');
+        }
+        return module.exports.getUserCoins(finnId);
+    },
     addCoins: (userId, amount, type, reason) => {
         const user = module.exports.getUserCoins(userId);
         const newBalance = user.coins + amount;

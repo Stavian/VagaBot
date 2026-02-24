@@ -384,6 +384,15 @@ async function logErrorToDiscord(error, context = '') {
 client.once(Events.ClientReady, c => {
     console.log(`Bereit! Eingeloggt als ${c.user.tag}`);
 
+    // Initialize Finn Wegbier's coin balance if configured
+    if (process.env.FINN_BOT_ID) {
+        const finnHandler = require('./utils/finnHandler');
+        const finnBalance = db.ensureFinnBalance(process.env.FINN_BOT_ID, finnHandler.getStartingCoins());
+        if (finnBalance) {
+            console.log(`[Finn] Finn Wegbier initialisiert mit ${finnBalance.coins} Coins`);
+        }
+    }
+
     // Set bot status
     c.user.setPresence({
         activities: [{ name: 'Passt auf!', type: 3 }], // Type 3 = Watching

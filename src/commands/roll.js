@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../database');
+const finnHandler = require('../utils/finnHandler');
 
 // Store active duels
 const activeDuels = new Map();
@@ -52,8 +53,8 @@ module.exports = {
                 });
             }
 
-            // Can't challenge bots
-            if (opponent.bot) {
+            // Can't challenge bots (except Finn Wegbier)
+            if (opponent.bot && !finnHandler.isFinn(opponent.id)) {
                 return interaction.reply({
                     content: '❌ Du kannst keine Bots herausfordern!',
                     ephemeral: true
@@ -132,6 +133,43 @@ module.exports = {
                     activeDuels.delete(duelId);
                 }
             }, 60000);
+
+            // If opponent is Finn Wegbier, auto-handle the duel
+            if (finnHandler.isFinn(opponent.id)) {
+                const delay = finnHandler.getFinnDelay();
+
+                setTimeout(async () => {
+                    const duelData = activeDuels.get(duelId);
+                    if (!duelData) return; // Already expired or handled
+
+                    const decision = await finnHandler.finnDecision(betAmount);
+
+                    if (!decision.accept) {
+                        // Finn declines
+                        activeDuels.delete(duelId);
+
+                        const declineEmbed = new EmbedBuilder()
+                            .setColor('#FF6B6B')
+                            .setTitle('🍺 Finn Wegbier lehnt ab')
+                            .setDescription(decision.message)
+                            .setTimestamp();
+
+                        try {
+                            await interaction.editReply({
+                                content: '',
+                                embeds: [declineEmbed],
+                                components: []
+                            });
+                        } catch (err) {
+                            console.error('Error updating Finn decline:', err);
+                        }
+                        return;
+                    }
+
+                    // Finn accepts - execute the duel
+                    await executeFinnRollDuel(interaction, duelId, duelData);
+                }, delay);
+            }
 
         } else {
             // Solo mode vs Bot
@@ -381,6 +419,171 @@ async function handleDuelButton(interaction, duelId, action) {
             embeds: [embed],
             components: []
         });
+    }
+}
+
+// Execute a roll duel when Finn auto-accepts
+async function executeFinnRollDuel(interaction, duelId, duelData) {
+    // Check if both players still have enough coins
+    const challengerData = db.getUserCoins(duelData.challengerId);
+    const finnData = db.getUserCoins(duelData.opponentId);
+
+    if (challengerData.coins < duelData.betAmount || finnData.coins < duelData.betAmount) {
+        activeDuels.delete(duelId);
+        try {
+            await interaction.editReply({
+                content: '❌ Ein Spieler hat nicht mehr genug Coins für dieses Duell!',
+                embeds: [],
+                components: []
+            });
+        } catch (err) {
+            console.error('Error updating Finn roll duel (insufficient coins):', err);
+        }
+        return;
+    }
+
+    // Deduct coins from both players
+    db.addCoins(duelData.challengerId, -duelData.betAmount, 'dice_roll_duel', 'Dice Roll Duell Einsatz');
+    db.addCoins(duelData.opponentId, -duelData.betAmount, 'dice_roll_duel', 'Dice Roll Duell Einsatz');
+
+    // Roll based on mode
+    let challengerResult, opponentResult, winnerId, winnerName, loserId, loserName, resultDescription, tie = false;
+    const mode = duelData.mode;
+
+    switch (mode) {
+        case 'high':
+            challengerResult = Math.floor(Math.random() * 6) + 1;
+            opponentResult = Math.floor(Math.random() * 6) + 1;
+
+            if (challengerResult > opponentResult) {
+                winnerId = duelData.challengerId;
+                winnerName = duelData.challengerName;
+                loserId = duelData.opponentId;
+                loserName = 'Finn Wegbier 🍺';
+            } else if (opponentResult > challengerResult) {
+                winnerId = duelData.opponentId;
+                winnerName = 'Finn Wegbier 🍺';
+                loserId = duelData.challengerId;
+                loserName = duelData.challengerName;
+            } else {
+                tie = true;
+            }
+
+            resultDescription = `🎯 **High Roll Modus**\n\n${duelData.challengerName}: **${challengerResult}**\nFinn Wegbier 🍺: **${opponentResult}**`;
+            break;
+
+        case 'jackpot':
+            const c1 = Math.floor(Math.random() * 6) + 1;
+            const c2 = Math.floor(Math.random() * 6) + 1;
+            const c3 = Math.floor(Math.random() * 6) + 1;
+            const challengerJackpot = c1 === c2 && c2 === c3;
+
+            const o1 = Math.floor(Math.random() * 6) + 1;
+            const o2 = Math.floor(Math.random() * 6) + 1;
+            const o3 = Math.floor(Math.random() * 6) + 1;
+            const opponentJackpot = o1 === o2 && o2 === o3;
+
+            challengerResult = { d1: c1, d2: c2, d3: c3, jackpot: challengerJackpot };
+            opponentResult = { d1: o1, d2: o2, d3: o3, jackpot: opponentJackpot };
+
+            if (challengerJackpot && !opponentJackpot) {
+                winnerId = duelData.challengerId;
+                winnerName = duelData.challengerName;
+                loserId = duelData.opponentId;
+                loserName = 'Finn Wegbier 🍺';
+            } else if (opponentJackpot && !challengerJackpot) {
+                winnerId = duelData.opponentId;
+                winnerName = 'Finn Wegbier 🍺';
+                loserId = duelData.challengerId;
+                loserName = duelData.challengerName;
+            } else {
+                tie = true;
+            }
+
+            resultDescription = `🎰 **Jackpot Modus**\n\n${duelData.challengerName}: **${c1}** | **${c2}** | **${c3}** ${challengerJackpot ? '🎉 JACKPOT!' : ''}\nFinn Wegbier 🍺: **${o1}** | **${o2}** | **${o3}** ${opponentJackpot ? '🎉 JACKPOT!' : ''}`;
+            break;
+
+        case 'standard':
+        default:
+            challengerResult = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+            opponentResult = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+
+            if (challengerResult > opponentResult) {
+                winnerId = duelData.challengerId;
+                winnerName = duelData.challengerName;
+                loserId = duelData.opponentId;
+                loserName = 'Finn Wegbier 🍺';
+            } else if (opponentResult > challengerResult) {
+                winnerId = duelData.opponentId;
+                winnerName = 'Finn Wegbier 🍺';
+                loserId = duelData.challengerId;
+                loserName = duelData.challengerName;
+            } else {
+                tie = true;
+            }
+
+            resultDescription = `🎲 **Standard Modus**\n\n${duelData.challengerName}: **${challengerResult}**\nFinn Wegbier 🍺: **${opponentResult}**`;
+            break;
+    }
+
+    const embed = new EmbedBuilder()
+        .setTitle('⚔️ Würfel Duell - Ergebnis!')
+        .setDescription(resultDescription)
+        .setTimestamp();
+
+    if (tie) {
+        // Refund both players
+        db.addCoins(duelData.challengerId, duelData.betAmount, 'dice_roll_duel_tie', 'Dice Roll Duell Unentschieden');
+        db.addCoins(duelData.opponentId, duelData.betAmount, 'dice_roll_duel_tie', 'Dice Roll Duell Unentschieden');
+
+        embed.setColor('#FFD700')
+            .addFields(
+                { name: '🤝 Unentschieden!', value: `Beide Spieler erhalten ihre ${duelData.betAmount.toLocaleString('de-DE')} Coins zurück.`, inline: false }
+            );
+
+        activeDuels.delete(duelId);
+
+        try {
+            // Finn Wegbier bot will detect this and send his own reaction message
+            await interaction.editReply({
+                content: '🤝 Unentschieden!',
+                embeds: [embed],
+                components: []
+            });
+        } catch (err) {
+            console.error('Error updating Finn roll tie:', err);
+        }
+        return;
+    }
+
+    // Determine if Finn won
+    const finnWon = winnerId === duelData.opponentId;
+
+    // Award winnings to winner (takes both bets)
+    const totalPot = duelData.betAmount * 2;
+    db.addCoins(winnerId, totalPot, 'dice_roll_duel_win', 'Dice Roll Duell Gewinn');
+
+    const winnerBalance = db.getUserCoins(winnerId).coins;
+    const loserBalance = db.getUserCoins(loserId).coins;
+
+    embed.setColor('#FFD700')
+        .addFields(
+            { name: '🏆 Gewinner', value: `**${winnerName}**\n+${totalPot.toLocaleString('de-DE')} Coins\n💳 ${winnerBalance.toLocaleString('de-DE')} Coins`, inline: true },
+            { name: '💔 Verlierer', value: `${loserName}\n-${duelData.betAmount.toLocaleString('de-DE')} Coins\n💳 ${loserBalance.toLocaleString('de-DE')} Coins`, inline: true }
+        )
+        .setFooter({ text: `Pot: ${totalPot.toLocaleString('de-DE')} Coins` });
+
+    activeDuels.delete(duelId);
+
+    try {
+        // Finn Wegbier bot will detect this and send his own reaction message
+        await interaction.editReply({
+            content: `🎉 ${finnWon ? 'Finn Wegbier 🍺' : `<@${duelData.challengerId}>`} hat gewonnen!`,
+            embeds: [embed],
+            components: []
+        });
+    } catch (err) {
+        console.error('Error updating Finn roll result:', err);
     }
 }
 
