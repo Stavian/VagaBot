@@ -106,7 +106,11 @@ module.exports = {
                     new ButtonBuilder()
                         .setCustomId(`duel_decline_${duelId}`)
                         .setLabel('❌ Ablehnen')
-                        .setStyle(ButtonStyle.Danger)
+                        .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
+                        .setCustomId(`duel_cancel_${duelId}`)
+                        .setLabel('🚫 Abbrechen')
+                        .setStyle(ButtonStyle.Secondary)
                 );
 
             await interaction.reply({
@@ -225,6 +229,30 @@ async function handleDuelButton(interaction, duelId, action) {
         return interaction.update({
             content: '⚠️ Dieses Duell ist abgelaufen oder wurde bereits beendet.',
             embeds: [],
+            components: []
+        });
+    }
+
+    // Only challenger can cancel
+    if (action === 'cancel') {
+        if (interaction.user.id !== duelData.challengerId) {
+            return interaction.reply({
+                content: '❌ Nur der Herausforderer kann das Duell abbrechen!',
+                ephemeral: true
+            });
+        }
+
+        activeDuels.delete(duelId);
+
+        const embed = new EmbedBuilder()
+            .setColor('#888888')
+            .setTitle('🚫 Duell abgebrochen')
+            .setDescription(`${duelData.challengerName} hat das Duell abgebrochen.`)
+            .setTimestamp();
+
+        return interaction.update({
+            content: '',
+            embeds: [embed],
             components: []
         });
     }

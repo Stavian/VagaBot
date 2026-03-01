@@ -43,11 +43,13 @@ client.on(Events.InteractionCreate, async interaction => {
             console.error(error);
             logErrorToDiscord(error, `Command: /${interaction.commandName} by ${interaction.user.tag}`);
 
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
-            } else {
-                await interaction.reply({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
-            }
+            try {
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
+                } else {
+                    await interaction.reply({ content: 'Es gab einen Fehler beim Ausführen dieses Befehls!', ephemeral: true });
+                }
+            } catch (_) { /* Interaction already acknowledged or expired */ }
         }
     } else if (interaction.isAutocomplete()) {
         const command = client.commands.get(interaction.commandName);
@@ -59,10 +61,10 @@ client.on(Events.InteractionCreate, async interaction => {
             console.error(error);
         }
     } else if (interaction.isButton()) {
-        if (interaction.customId.startsWith('duel_accept_') || interaction.customId.startsWith('duel_decline_')) {
+        if (interaction.customId.startsWith('duel_accept_') || interaction.customId.startsWith('duel_decline_') || interaction.customId.startsWith('duel_cancel_')) {
             // Coinflip duel button handler
             const parts = interaction.customId.split('_');
-            const action = parts[1]; // 'accept' or 'decline'
+            const action = parts[1]; // 'accept', 'decline', or 'cancel'
             const duelId = parts.slice(2).join('_'); // Reconstruct full duelId (userId_opponentId_timestamp)
             const coinflipCommand = require('./commands/coinflip');
             if (coinflipCommand.handleDuelButton) {
@@ -76,10 +78,10 @@ client.on(Events.InteractionCreate, async interaction => {
                 }
             }
             return;
-        } else if (interaction.customId.startsWith('duel_roll_accept_') || interaction.customId.startsWith('duel_roll_decline_')) {
+        } else if (interaction.customId.startsWith('duel_roll_accept_') || interaction.customId.startsWith('duel_roll_decline_') || interaction.customId.startsWith('duel_roll_cancel_')) {
             // Dice roll duel button handler
             const parts = interaction.customId.split('_');
-            const action = parts[2]; // 'accept' or 'decline'
+            const action = parts[2]; // 'accept', 'decline', or 'cancel'
             const duelId = parts.slice(3).join('_'); // Everything after action
             const rollCommand = require('./commands/roll');
             if (rollCommand.handleDuelButton) {

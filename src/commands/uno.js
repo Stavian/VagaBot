@@ -474,7 +474,12 @@ async function autoDrawCard(interaction, gameId) {
     const drawnCard = gameData.deck.pop();
     currentPlayer.hand.push(drawnCard);
 
-    await interaction.channel.send(`⏰ ${currentPlayer.username} hat zu lange gewartet und zieht automatisch eine Karte!`);
+    try {
+        const gameChannel = await interaction.client.channels.fetch(gameData.channelId);
+        await gameChannel.send(`⏰ ${currentPlayer.username} hat zu lange gewartet und zieht automatisch eine Karte!`);
+    } catch (err) {
+        console.error('Error sending auto-draw message:', err);
+    }
 
     // Next turn
     nextTurn(interaction, gameId);

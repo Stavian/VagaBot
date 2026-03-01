@@ -135,7 +135,7 @@ async function showSoloGameState(interaction, gameData) {
     const embed = new EmbedBuilder()
         .setColor('#FF4444')
         .setTitle('🔫 Russisches Roulette - Solo')
-        .setDescription(`**Magazin:** ${chamberDisplay}\n**Kammern übrig:** ${gameData.chambersRemaining}/5\n**Kugeln im Magazin:** 2\n\n${gameData.chambersCleared === 0 ? '**Drücke ab oder nimm dein Geld!**' : '**Glück gehabt! Weiter oder auszahlen?**'}`)
+        .setDescription(`**Magazin:** ${chamberDisplay}\n**Kammern übrig:** ${gameData.chambersRemaining}/5\n**Kugeln im Magazin:** ${gameData.bullets}\n\n${gameData.chambersCleared === 0 ? '**Drücke ab oder nimm dein Geld!**' : '**Glück gehabt! Weiter oder auszahlen?**'}`)
         .addFields(
             { name: '💰 Einsatz', value: `${gameData.betAmount.toLocaleString('de-DE')} Coins`, inline: true },
             { name: '✨ Aktueller Multiplikator', value: `${gameData.multiplier.toFixed(1)}x`, inline: true },
@@ -535,6 +535,7 @@ async function handleRouletteButton(interaction, gameId, action) {
             });
         }
 
+        await interaction.deferUpdate();
         await startGame(interaction, gameId);
 
     } else if (action === 'cancel') {

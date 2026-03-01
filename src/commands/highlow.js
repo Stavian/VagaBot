@@ -50,6 +50,15 @@ module.exports = {
             multiplier: 1
         };
 
+        // Auto-expire abandoned game after 5 minutes and refund bet
+        const expireTimeout = setTimeout(() => {
+            if (activeGames.has(userId)) {
+                db.addCoins(userId, gameData.betAmount, 'highlow_refund', 'High-Low Einsatz zurückerstattet (Timeout)');
+                activeGames.delete(userId);
+            }
+        }, 5 * 60 * 1000);
+
+        gameData.expireTimeout = expireTimeout;
         activeGames.set(userId, gameData);
 
         const embed = new EmbedBuilder()
@@ -108,6 +117,7 @@ async function handleHighLowButton(interaction) {
     if (choice === 'cashout') {
         const winnings = Math.floor(gameData.betAmount * gameData.multiplier);
         db.addCoins(targetUserId, winnings, 'highlow_win', 'High-Low Gewinn (Cashout)');
+        clearTimeout(gameData.expireTimeout);
         activeGames.delete(targetUserId);
 
         const newBalance = db.getUserCoins(targetUserId).coins;
@@ -133,6 +143,7 @@ async function handleHighLowButton(interaction) {
 
     if (!correct) {
         // Lost
+        clearTimeout(gameData.expireTimeout);
         activeGames.delete(targetUserId);
         const newBalance = db.getUserCoins(targetUserId).coins;
 
@@ -151,6 +162,7 @@ async function handleHighLowButton(interaction) {
     }
 
     // Correct guess
+    const previousNumber = gameData.currentNumber;
     gameData.round++;
     gameData.multiplier += 0.4;
     gameData.currentNumber = nextNumber;
@@ -159,6 +171,7 @@ async function handleHighLowButton(interaction) {
     if (gameData.round > gameData.maxRounds) {
         const winnings = Math.floor(gameData.betAmount * gameData.multiplier);
         db.addCoins(targetUserId, winnings, 'highlow_win', 'High-Low Gewinn (Vollständig)');
+        clearTimeout(gameData.expireTimeout);
         activeGames.delete(targetUserId);
 
         const newBalance = db.getUserCoins(targetUserId).coins;
@@ -180,7 +193,7 @@ async function handleHighLowButton(interaction) {
     const embed = new EmbedBuilder()
         .setColor('#00FF00')
         .setTitle('✅ Richtig geraten!')
-        .setDescription(`Vorherige Zahl: **${gameData.currentNumber}**\nDeine neue Zahl: **${nextNumber}**\n\nWird die nächste Zahl höher oder niedriger sein?`)
+        .setDescription(`Vorherige Zahl: **${previousNumber}**\nDeine neue Zahl: **${nextNumber}**\n\nWird die nächste Zahl höher oder niedriger sein?`)
         .addFields(
             { name: '💰 Einsatz', value: `${gameData.betAmount.toLocaleString('de-DE')} Coins`, inline: true },
             { name: '🎮 Runde', value: `${gameData.round}/${gameData.maxRounds}`, inline: true },

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../database');
 
 module.exports = {
@@ -20,7 +20,6 @@ module.exports = {
                         .addChoices(
                             { name: 'Match Ergebnis (Sieg/Niederlage)', value: 'match_result' },
                             { name: 'K/D Vorhersage', value: 'kd_prediction' },
-                            { name: 'Arc Raiders Extraction (Erfolg/Fehlschlag)', value: 'extraction_success' },
                             { name: 'Custom', value: 'custom' }
                         ))
                 .addStringOption(option =>
@@ -295,8 +294,9 @@ async function handleResolve(interaction) {
         return interaction.reply({ content: '❌ Wette nicht gefunden.', ephemeral: true });
     }
 
-    if (bet.creator_id !== interaction.user.id) {
-        return interaction.reply({ content: '❌ Nur der Ersteller kann diese Wette beenden.', ephemeral: true });
+    const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+    if (bet.creator_id !== interaction.user.id && !isAdmin) {
+        return interaction.reply({ content: '❌ Nur der Ersteller oder ein Administrator kann diese Wette beenden.', ephemeral: true });
     }
 
     if (bet.resolved) {
