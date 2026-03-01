@@ -89,6 +89,7 @@ module.exports = {
                         ))),
 
     async execute(interaction) {
+        await interaction.deferReply();
         const subcommand = interaction.options.getSubcommand();
 
         if (subcommand === 'erstellen') {
@@ -151,7 +152,7 @@ async function handleCreate(interaction) {
         embed.addFields({ name: '⏰ Schließt um', value: `<t:${Math.floor(new Date(closesAt).getTime() / 1000)}:R>`, inline: true });
     }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 async function handlePlace(interaction) {
@@ -162,7 +163,7 @@ async function handlePlace(interaction) {
     const result = db.placeBet(betId, interaction.user.id, amount, choice);
 
     if (!result.success) {
-        return interaction.reply({ content: `❌ Fehler: ${result.error}`, ephemeral: true });
+        return interaction.editReply({ content: `❌ Fehler: ${result.error}`, ephemeral: true });
     }
 
     const bet = db.getBetById(betId);
@@ -179,14 +180,14 @@ async function handlePlace(interaction) {
         .setFooter({ text: 'Viel Glück!' })
         .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleList(interaction) {
     const bets = db.getActiveBets();
 
     if (bets.length === 0) {
-        return interaction.reply({ content: '📭 Keine aktiven Wetten vorhanden.', ephemeral: true });
+        return interaction.editReply({ content: '📭 Keine aktiven Wetten vorhanden.', ephemeral: true });
     }
 
     const embed = new EmbedBuilder()
@@ -217,7 +218,7 @@ async function handleList(interaction) {
         });
     }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleInfo(interaction) {
@@ -225,7 +226,7 @@ async function handleInfo(interaction) {
     const bet = db.getBetById(betId);
 
     if (!bet) {
-        return interaction.reply({ content: '❌ Wette nicht gefunden.', ephemeral: true });
+        return interaction.editReply({ content: '❌ Wette nicht gefunden.', ephemeral: true });
     }
 
     const placements = db.getBetPlacements(betId);
@@ -281,7 +282,7 @@ async function handleInfo(interaction) {
         embed.addFields({ name: '⏰ Schließt', value: `<t:${Math.floor(new Date(bet.closes_at).getTime() / 1000)}:R>`, inline: true });
     }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleResolve(interaction) {
@@ -291,22 +292,22 @@ async function handleResolve(interaction) {
     const bet = db.getBetById(betId);
 
     if (!bet) {
-        return interaction.reply({ content: '❌ Wette nicht gefunden.', ephemeral: true });
+        return interaction.editReply({ content: '❌ Wette nicht gefunden.', ephemeral: true });
     }
 
     const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
     if (bet.creator_id !== interaction.user.id && !isAdmin) {
-        return interaction.reply({ content: '❌ Nur der Ersteller oder ein Administrator kann diese Wette beenden.', ephemeral: true });
+        return interaction.editReply({ content: '❌ Nur der Ersteller oder ein Administrator kann diese Wette beenden.', ephemeral: true });
     }
 
     if (bet.resolved) {
-        return interaction.reply({ content: '❌ Diese Wette wurde bereits beendet.', ephemeral: true });
+        return interaction.editReply({ content: '❌ Diese Wette wurde bereits beendet.', ephemeral: true });
     }
 
     const result = db.resolveBet(betId, winningOption);
 
     if (!result.success) {
-        return interaction.reply({ content: `❌ Fehler: ${result.error}`, ephemeral: true });
+        return interaction.editReply({ content: `❌ Fehler: ${result.error}`, ephemeral: true });
     }
 
     const embed = new EmbedBuilder()
@@ -320,5 +321,5 @@ async function handleResolve(interaction) {
         )
         .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }

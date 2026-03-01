@@ -6,10 +6,11 @@ module.exports = {
         .setName('tags')
         .setDescription('Zeigt alle verfügbaren Tags an.'),
     async execute(interaction) {
+        await interaction.deferReply();
         const tags = db.getAllTags();
 
         if (tags.length === 0) {
-            return interaction.reply({ content: 'Es gibt noch keine Tags.', ephemeral: true });
+            return interaction.editReply({ content: 'Es gibt noch keine Tags.' });
         }
 
         const embed = new EmbedBuilder()
@@ -18,6 +19,6 @@ module.exports = {
             .setDescription(tags.join(', '))
             .setFooter({ text: 'Neue Tags können nur von Mods erstellt werden.' });
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

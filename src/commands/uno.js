@@ -59,6 +59,7 @@ module.exports = {
  * Handle /uno start - Create lobby
  */
 async function handleStart(interaction) {
+    await interaction.deferReply();
     const betAmount = interaction.options.getInteger('einsatz');
     const maxPlayers = interaction.options.getInteger('max_spieler') || 4;
     const userId = interaction.user.id;
@@ -66,9 +67,8 @@ async function handleStart(interaction) {
     // Check if user has enough coins
     const userData = db.getUserCoins(userId);
     if (userData.coins < betAmount) {
-        return interaction.reply({
-            content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins.toLocaleString('de-DE')} Coins.`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins.toLocaleString('de-DE')} Coins.`
         });
     }
 
@@ -130,7 +130,7 @@ async function handleStart(interaction) {
                 .setStyle(ButtonStyle.Danger)
         );
 
-    await interaction.reply({ embeds: [embed], components: [row] });
+    await interaction.editReply({ embeds: [embed], components: [row] });
 
     // Auto-start after 60 seconds if at least 2 players
     setTimeout(async () => {
@@ -153,6 +153,7 @@ async function handleStart(interaction) {
  * Handle /uno rules - Show rules
  */
 async function handleRules(interaction) {
+    await interaction.deferReply({ ephemeral: true });
     const embed = new EmbedBuilder()
         .setColor('#3498DB')
         .setTitle('🎴 VagaUNO - Spielregeln')
@@ -172,7 +173,7 @@ async function handleRules(interaction) {
         .setFooter({ text: 'Viel Glück!' })
         .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 /**

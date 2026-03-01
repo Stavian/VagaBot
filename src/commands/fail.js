@@ -9,8 +9,9 @@ module.exports = {
             option.setName('nutzer')
                 .setDescription('Spezifischen Nutzer roasten (optional)')),
     async execute(interaction) {
+        await interaction.deferReply();
         const target = interaction.options.getUser('nutzer');
-        
+
         let quote;
         if (target) {
             quote = db.getRoast(target.id);
@@ -20,7 +21,7 @@ module.exports = {
 
         if (!quote) {
             const msg = target ? `Keine Fail-Momente für ${target.username} gefunden... noch nicht.` : 'Keine Fail-Momente gefunden!';
-            return interaction.reply({ content: msg, ephemeral: true });
+            return interaction.editReply({ content: msg });
         }
 
         const embed = new EmbedBuilder()
@@ -34,6 +35,6 @@ module.exports = {
             embed.setImage(quote.image_url);
         }
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

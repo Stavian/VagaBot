@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const db = require('../database');
 
 // ADMIN USER ID - Replace with your Discord user ID
@@ -57,11 +57,12 @@ module.exports = {
                         .setRequired(true))),
 
     async execute(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         // Check if user is admin
         if (interaction.user.id !== ADMIN_USER_ID) {
-            return interaction.reply({
-                content: '❌ Du hast keine Berechtigung, diesen Befehl zu verwenden!',
-                ephemeral: true
+            return interaction.editReply({
+                content: '❌ Du hast keine Berechtigung, diesen Befehl zu verwenden!'
             });
         }
 
@@ -73,40 +74,32 @@ module.exports = {
         const currentBalance = userData.coins;
 
         if (subcommand === 'set') {
-            // Set balance to specific amount
             const difference = amount - currentBalance;
             db.addCoins(targetUser.id, difference, 'admin_set', `Admin set balance to ${amount}`);
 
-            return interaction.reply({
-                content: `✅ Guthaben von ${targetUser.username} wurde auf **${amount.toLocaleString('de-DE')} Coins** gesetzt.\n📊 Vorher: ${currentBalance.toLocaleString('de-DE')} Coins`,
-                ephemeral: true
+            return interaction.editReply({
+                content: `✅ Guthaben von ${targetUser.username} wurde auf **${amount.toLocaleString('de-DE')} Coins** gesetzt.\n📊 Vorher: ${currentBalance.toLocaleString('de-DE')} Coins`
             });
 
         } else if (subcommand === 'add') {
-            // Add coins
             db.addCoins(targetUser.id, amount, 'admin_add', `Admin added ${amount} coins`);
             const newBalance = db.getUserCoins(targetUser.id).coins;
 
-            return interaction.reply({
-                content: `✅ **${amount.toLocaleString('de-DE')} Coins** wurden zu ${targetUser.username} hinzugefügt.\n💰 Vorher: ${currentBalance.toLocaleString('de-DE')} Coins\n💳 Nachher: ${newBalance.toLocaleString('de-DE')} Coins`,
-                ephemeral: true
+            return interaction.editReply({
+                content: `✅ **${amount.toLocaleString('de-DE')} Coins** wurden zu ${targetUser.username} hinzugefügt.\n💰 Vorher: ${currentBalance.toLocaleString('de-DE')} Coins\n💳 Nachher: ${newBalance.toLocaleString('de-DE')} Coins`
             });
 
         } else if (subcommand === 'remove') {
-            // Remove coins
             db.addCoins(targetUser.id, -amount, 'admin_remove', `Admin removed ${amount} coins`);
             const newBalance = db.getUserCoins(targetUser.id).coins;
 
-            return interaction.reply({
-                content: `✅ **${amount.toLocaleString('de-DE')} Coins** wurden von ${targetUser.username} entfernt.\n💰 Vorher: ${currentBalance.toLocaleString('de-DE')} Coins\n💳 Nachher: ${newBalance.toLocaleString('de-DE')} Coins`,
-                ephemeral: true
+            return interaction.editReply({
+                content: `✅ **${amount.toLocaleString('de-DE')} Coins** wurden von ${targetUser.username} entfernt.\n💰 Vorher: ${currentBalance.toLocaleString('de-DE')} Coins\n💳 Nachher: ${newBalance.toLocaleString('de-DE')} Coins`
             });
 
         } else if (subcommand === 'view') {
-            // View balance
-            return interaction.reply({
-                content: `💳 **${targetUser.username}** Guthaben:\n💰 Coins: ${currentBalance.toLocaleString('de-DE')}\n📈 Gesamt verdient: ${userData.total_earned.toLocaleString('de-DE')}\n🔥 Daily Streak: ${userData.daily_streak || 0}`,
-                ephemeral: true
+            return interaction.editReply({
+                content: `💳 **${targetUser.username}** Guthaben:\n💰 Coins: ${currentBalance.toLocaleString('de-DE')}\n📈 Gesamt verdient: ${userData.total_earned.toLocaleString('de-DE')}\n🔥 Daily Streak: ${userData.daily_streak || 0}`
             });
         }
     }

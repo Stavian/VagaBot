@@ -29,6 +29,8 @@ module.exports = {
                 .setRequired(false)),
 
     async execute(interaction) {
+        await interaction.deferReply();
+
         const betAmount = interaction.options.getInteger('einsatz');
         const mode = interaction.options.getString('modus') || 'standard';
         const opponent = interaction.options.getUser('gegner');
@@ -37,9 +39,8 @@ module.exports = {
         // Check if user has enough coins
         const userData = db.getUserCoins(userId);
         if (userData.coins < betAmount) {
-            return interaction.reply({
-                content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins} Coins.`,
-                ephemeral: true
+            return interaction.editReply({
+                content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins} Coins.`
             });
         }
 
@@ -47,26 +48,23 @@ module.exports = {
         if (opponent) {
             // Can't challenge yourself
             if (opponent.id === userId) {
-                return interaction.reply({
-                    content: '❌ Du kannst nicht gegen dich selbst spielen!',
-                    ephemeral: true
+                return interaction.editReply({
+                    content: '❌ Du kannst nicht gegen dich selbst spielen!'
                 });
             }
 
             // Can't challenge bots (except Finn Wegbier)
             if (opponent.bot && !finnHandler.isFinn(opponent.id)) {
-                return interaction.reply({
-                    content: '❌ Du kannst keine Bots herausfordern!',
-                    ephemeral: true
+                return interaction.editReply({
+                    content: '❌ Du kannst keine Bots herausfordern!'
                 });
             }
 
             // Check if opponent has enough coins
             const opponentData = db.getUserCoins(opponent.id);
             if (opponentData.coins < betAmount) {
-                return interaction.reply({
-                    content: `❌ ${opponent.username} hat nicht genug Coins! (${opponentData.coins} Coins verfügbar)`,
-                    ephemeral: true
+                return interaction.editReply({
+                    content: `❌ ${opponent.username} hat nicht genug Coins! (${opponentData.coins} Coins verfügbar)`
                 });
             }
 
@@ -125,7 +123,7 @@ module.exports = {
                         .setStyle(ButtonStyle.Secondary)
                 );
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: `${opponent}`,
                 embeds: [embed],
                 components: [row]
@@ -238,7 +236,7 @@ module.exports = {
                 );
             }
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         }
     }
 };

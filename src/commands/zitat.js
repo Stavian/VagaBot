@@ -5,12 +5,13 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('zitat')
         .setDescription('Erhalte ein zufälliges Zitat.')
-        .addUserOption(option => 
+        .addUserOption(option =>
             option.setName('nutzer')
                 .setDescription('Nach Nutzer filtern (optional)')),
     async execute(interaction) {
+        await interaction.deferReply();
         const user = interaction.options.getUser('nutzer');
-        
+
         let quote;
         if (user) {
             quote = db.getRandomQuote(user.id);
@@ -19,7 +20,7 @@ module.exports = {
         }
 
         if (!quote) {
-            return interaction.reply({ content: 'Keine Zitate gefunden!', ephemeral: true });
+            return interaction.editReply({ content: 'Keine Zitate gefunden!' });
         }
 
         const categoryNames = {
@@ -40,6 +41,6 @@ module.exports = {
             embed.setImage(quote.image_url);
         }
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

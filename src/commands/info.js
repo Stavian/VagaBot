@@ -16,15 +16,15 @@ module.exports = {
                 .setRequired(false)),
 
     async execute(interaction) {
+        await interaction.deferReply({ ephemeral: true });
         // --- Security Check ---
         const allowedRoles = db.getConfigRoles();
         const hasAllowedRole = interaction.member.roles.cache.some(role => allowedRoles.includes(role.id));
         const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
 
         if (!isAdmin && !hasAllowedRole) {
-            return interaction.reply({
-                content: '⛔ Du hast keine Berechtigung, diesen Befehl zu nutzen.',
-                ephemeral: true
+            return interaction.editReply({
+                content: '⛔ Du hast keine Berechtigung, diesen Befehl zu nutzen.'
             });
         }
         // ----------------------
@@ -255,7 +255,7 @@ module.exports = {
                     embeds: [introEmbed],
                     components: [buttonRow1, buttonRow2]
                 });
-                await interaction.reply({
+                await interaction.editReply({
                     content: `✅ Info-Nachricht wurde aktualisiert in ${channel}!`,
                     ephemeral: true
                 });
@@ -273,14 +273,14 @@ module.exports = {
                     console.error('[Info Command] Fehler beim Anpinnen:', pinError);
                 }
 
-                await interaction.reply({
+                await interaction.editReply({
                     content: `✅ Info-Nachricht wurde gepostet und angepinnt in ${channel}!\n\n**Nachrichten-ID zum Aktualisieren:** \`${sentMessage.id}\`\n\nNutze \`/info kanal:${channel} message_id:${sentMessage.id}\` um diese Nachricht zu aktualisieren.`,
                     ephemeral: true
                 });
             }
         } catch (error) {
             console.error('[Info Command] Fehler:', error);
-            await interaction.reply({
+            await interaction.editReply({
                 content: `❌ Fehler beim Posten/Aktualisieren der Nachricht: ${error.message}`,
                 ephemeral: true
             });

@@ -29,29 +29,30 @@ module.exports = {
                     option.setName('neue_tags')
                         .setDescription('Die neuen Tags des Zitats'))),
     async execute(interaction) {
+        await interaction.deferReply({ ephemeral: true });
         const subcommand = interaction.options.getSubcommand();
         const id = interaction.options.getInteger('id');
 
         if (subcommand === 'delete') {
             const result = db.deleteQuote(id);
             if (result.changes > 0) {
-                await interaction.reply({ content: `Zitat #${id} wurde erfolgreich gelöscht.`, ephemeral: true });
+                await interaction.editReply({ content: `Zitat #${id} wurde erfolgreich gelöscht.` });
             } else {
-                await interaction.reply({ content: `Kein Zitat mit ID #${id} gefunden.`, ephemeral: true });
+                await interaction.editReply({ content: `Kein Zitat mit ID #${id} gefunden.` });
             }
         } else if (subcommand === 'edit') {
             const newText = interaction.options.getString('neuer_text');
             const newTags = interaction.options.getString('neue_tags');
 
             if (!newText && !newTags) {
-                return interaction.reply({ content: 'Du musst entweder einen neuen Text oder neue Tags angeben.', ephemeral: true });
+                return interaction.editReply({ content: 'Du musst entweder einen neuen Text oder neue Tags angeben.' });
             }
 
             const result = db.updateQuote(id, newText, newTags);
             if (result.changes > 0) {
-                await interaction.reply({ content: `Zitat #${id} wurde aktualisiert.`, ephemeral: true });
+                await interaction.editReply({ content: `Zitat #${id} wurde aktualisiert.` });
             } else {
-                await interaction.reply({ content: `Kein Zitat mit ID #${id} gefunden.`, ephemeral: true });
+                await interaction.editReply({ content: `Kein Zitat mit ID #${id} gefunden.` });
             }
         }
     },

@@ -16,6 +16,7 @@ module.exports = {
                     { name: 'Alle', value: 'all' }
                 )),
     async execute(interaction) {
+        await interaction.deferReply();
         const type = interaction.options.getString('typ') || 'all';
 
         const topFails = db.getTopFailures();
@@ -101,6 +102,6 @@ module.exports = {
                 );
         }
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

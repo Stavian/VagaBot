@@ -7,6 +7,8 @@ module.exports = {
         .setDescription('Hol dir deine tägliche Belohnung ab'),
 
     async execute(interaction) {
+        await interaction.deferReply();
+
         const result = db.claimDaily(interaction.user.id);
 
         if (!result.success) {
@@ -16,7 +18,7 @@ module.exports = {
                 .setDescription(`Du hast deine tägliche Belohnung bereits abgeholt!\n\n**Nächste Belohnung in:** ${result.hoursLeft} Stunden`)
                 .setFooter({ text: 'Komm morgen wieder!' });
 
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.editReply({ embeds: [embed] });
         }
 
         const embed = new EmbedBuilder()
@@ -30,7 +32,7 @@ module.exports = {
             .setFooter({ text: `Halte deinen Streak aufrecht für mehr Bonus! (Max: +100 Coins)` })
             .setTimestamp();
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
 
         // Check new balance
         const userData = db.getUserCoins(interaction.user.id);

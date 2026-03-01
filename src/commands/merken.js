@@ -28,6 +28,7 @@ module.exports = {
             option.setName('tags')
                 .setDescription('Komma-getrennte Tags (z.B. #valorant)')),
     async execute(interaction) {
+        await interaction.deferReply();
         const user = interaction.options.getUser('nutzer');
         const text = interaction.options.getString('text');
         const category = interaction.options.getString('kategorie') || 'general';
@@ -37,7 +38,7 @@ module.exports = {
 
         // 1. Check: Self-Save Prevention
         if (user.id === interaction.user.id) {
-            return interaction.reply({ content: 'Nice try! Du kannst deine eigenen Sachen nicht speichern. Eigenlob stinkt. 👃', ephemeral: true });
+            return interaction.editReply({ content: 'Nice try! Du kannst deine eigenen Sachen nicht speichern. Eigenlob stinkt. 👃' });
         }
 
         // 2. Check: Tag Management
@@ -69,9 +70,8 @@ module.exports = {
 
                 if (!hasPermission) {
                     const existingTags = db.getAllTags().join(', ');
-                    return interaction.reply({ 
-                        content: `🛑 Du hast keine Berechtigung, neue Tags zu erstellen (${newTags.join(', ')}).\n\nErlaubte Tags: ${existingTags}`, 
-                        ephemeral: true 
+                    return interaction.editReply({
+                        content: `🛑 Du hast keine Berechtigung, neue Tags zu erstellen (${newTags.join(', ')}).\n\nErlaubte Tags: ${existingTags}`
                     });
                 } else {
                     // Create the new tags
@@ -97,10 +97,10 @@ module.exports = {
             if (validTags) replyText += ` [Tags: ${validTags}]`;
             if (imageUrl) replyText += ` [Mit Bild]`;
             
-            await interaction.reply(replyText);
+            await interaction.editReply(replyText);
         } catch (error) {
             console.error(error);
-            await interaction.reply({ content: 'Fehler beim Speichern des Zitats.', ephemeral: true });
+            await interaction.editReply({ content: 'Fehler beim Speichern des Zitats.' });
         }
     },
 };

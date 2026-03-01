@@ -15,23 +15,23 @@ module.exports = {
                 .setMinValue(1)),
 
     async execute(interaction) {
+        await interaction.deferReply();
+
         const betAmount = interaction.options.getInteger('einsatz');
         const userId = interaction.user.id;
 
         // Check if user already has an active game
         if (activeGames.has(userId)) {
-            return interaction.reply({
-                content: '❌ Du hast bereits ein aktives High-Low Spiel! Beende es zuerst.',
-                ephemeral: true
+            return interaction.editReply({
+                content: '❌ Du hast bereits ein aktives High-Low Spiel! Beende es zuerst.'
             });
         }
 
         // Check if user has enough coins
         const userData = db.getUserCoins(userId);
         if (userData.coins < betAmount) {
-            return interaction.reply({
-                content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins} Coins.`,
-                ephemeral: true
+            return interaction.editReply({
+                content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins} Coins.`
             });
         }
 
@@ -90,7 +90,7 @@ module.exports = {
                     .setDisabled(gameData.round === 1) // Can't cash out on first round
             );
 
-        await interaction.reply({ embeds: [embed], components: [row] });
+        await interaction.editReply({ embeds: [embed], components: [row] });
     }
 };
 

@@ -10,11 +10,12 @@ module.exports = {
                 .setDescription('Das Wort, nach dem gesucht werden soll')
                 .setRequired(true)),
     async execute(interaction) {
+        await interaction.deferReply();
         const keyword = interaction.options.getString('stichwort');
         const results = db.searchQuotes(keyword);
 
         if (results.length === 0) {
-            return interaction.reply({ content: `Keine Zitate mit "${keyword}" gefunden.`, ephemeral: true });
+            return interaction.editReply({ content: `Keine Zitate mit "${keyword}" gefunden.` });
         }
 
         // Since the DB query orders by RANDOM(), the first result is a random match.
@@ -39,6 +40,6 @@ module.exports = {
             embed.setImage(quote.image_url);
         }
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

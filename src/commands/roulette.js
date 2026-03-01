@@ -36,6 +36,8 @@ module.exports = {
                         .setMaxValue(6))),
 
     async execute(interaction) {
+        await interaction.deferReply();
+
         const subcommand = interaction.options.getSubcommand();
 
         if (subcommand === 'solo') {
@@ -52,38 +54,35 @@ async function handleSolo(interaction) {
 
     // Check if user already has an active solo game
     if (soloGames.has(userId)) {
-        return interaction.reply({
-            content: '❌ Du hast bereits ein aktives Solo-Roulette Spiel!',
-            ephemeral: true
+        return interaction.editReply({
+            content: '❌ Du hast bereits ein aktives Solo-Roulette Spiel!'
         });
     }
 
     // Check if the bot can actually timeout members
     if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Ich habe keine Berechtigung, Mitglieder stummzuschalten (Moderate Members).', ephemeral: true });
+        return interaction.editReply({ content: '❌ Ich habe keine Berechtigung, Mitglieder stummzuschalten (Moderate Members).' });
     }
 
     // Check if the target is moderateable (admins/owners usually aren't)
     if (!interaction.member.moderatable) {
-        return interaction.reply({ content: '🛡️ Du bist zu mächtig für dieses Spiel (kann nicht gemuted werden).', ephemeral: true });
+        return interaction.editReply({ content: '🛡️ Du bist zu mächtig für dieses Spiel (kann nicht gemuted werden).' });
     }
 
     // Check if user has enough coins (need 5x for potential loss)
     const userData = db.getUserCoins(userId);
     const requiredCoins = betAmount * 5; // Need 5x for bet + potential penalty
     if (userData.coins < requiredCoins) {
-        return interaction.reply({
-            content: `❌ Du hast nicht genug Coins! Du brauchst mindestens ${requiredCoins.toLocaleString('de-DE')} Coins (5x Einsatz für möglichen Verlust).\n💳 Dein Kontostand: ${userData.coins.toLocaleString('de-DE')} Coins`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `❌ Du hast nicht genug Coins! Du brauchst mindestens ${requiredCoins.toLocaleString('de-DE')} Coins (5x Einsatz für möglichen Verlust).\n💳 Dein Kontostand: ${userData.coins.toLocaleString('de-DE')} Coins`
         });
     }
 
     // Check daily betting limit
     const betCheck = db.canBet(userId, betAmount, 500);
     if (!betCheck.canBet) {
-        return interaction.reply({
-            content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`
         });
     }
 
@@ -172,24 +171,22 @@ async function handleStart(interaction) {
 
     // Check bot permissions
     if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Ich habe keine Berechtigung, Mitglieder stummzuschalten (Moderate Members).', ephemeral: true });
+        return interaction.editReply({ content: '❌ Ich habe keine Berechtigung, Mitglieder stummzuschalten (Moderate Members).' });
     }
 
     // Check if user has enough coins
     const userData = db.getUserCoins(userId);
     if (userData.coins < betAmount) {
-        return interaction.reply({
-            content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins} Coins.`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `❌ Du hast nicht genug Coins! Du hast nur ${userData.coins} Coins.`
         });
     }
 
     // Check daily betting limit
     const betCheck = db.canBet(userId, betAmount, 500);
     if (!betCheck.canBet) {
-        return interaction.reply({
-            content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `❌ Tägliches Wettlimit erreicht!\n💰 Bereits gesetzt heute: ${betCheck.currentAmount} Coins\n📊 Tägliches Limit: ${betCheck.dailyLimit} Coins\n✅ Verbleibend: ${betCheck.remainingAmount} Coins`
         });
     }
 
@@ -238,7 +235,7 @@ async function handleStart(interaction) {
                 .setStyle(ButtonStyle.Danger)
         );
 
-    await interaction.reply({
+    await interaction.editReply({
         embeds: [embed],
         components: [row]
     });

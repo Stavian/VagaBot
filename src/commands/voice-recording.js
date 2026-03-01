@@ -19,6 +19,7 @@ module.exports = {
                 .setDescription('Zeige Status der Voice-Aufnahme')),
 
     async execute(interaction) {
+        await interaction.deferReply();
         const subcommand = interaction.options.getSubcommand();
 
         if (subcommand === 'start') {
@@ -35,9 +36,8 @@ async function handleStart(interaction) {
     // Check if user is in a voice channel
     const member = interaction.guild.members.cache.get(interaction.user.id);
     if (!member || !member.voice.channel) {
-        return interaction.reply({
-            content: '❌ Du musst in einem Voice-Channel sein, um die Aufnahme zu starten!',
-            ephemeral: true
+        return interaction.editReply({
+            content: '❌ Du musst in einem Voice-Channel sein, um die Aufnahme zu starten!'
         });
     }
 
@@ -45,13 +45,10 @@ async function handleStart(interaction) {
 
     // Check if already recording
     if (activeRecordings.has(voiceChannel.id)) {
-        return interaction.reply({
-            content: `✅ Voice-Aufnahme läuft bereits in **${voiceChannel.name}**!`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `✅ Voice-Aufnahme läuft bereits in **${voiceChannel.name}**!`
         });
     }
-
-    await interaction.deferReply();
 
     try {
         const recorder = await getRecorder(voiceChannel);
@@ -63,15 +60,13 @@ async function handleStart(interaction) {
             });
         } else {
             await interaction.editReply({
-                content: '❌ Fehler beim Starten der Aufnahme. Stelle sicher, dass der Bot die nötigen Berechtigungen hat.',
-                ephemeral: true
+                content: '❌ Fehler beim Starten der Aufnahme. Stelle sicher, dass der Bot die nötigen Berechtigungen hat.'
             });
         }
     } catch (error) {
         console.error('[Voice-Recording] Start error:', error);
         await interaction.editReply({
-            content: `❌ Fehler beim Starten der Aufnahme: ${error.message}`,
-            ephemeral: true
+            content: `❌ Fehler beim Starten der Aufnahme: ${error.message}`
         });
     }
 }
@@ -80,9 +75,8 @@ async function handleStop(interaction) {
     // Check if user is in a voice channel
     const member = interaction.guild.members.cache.get(interaction.user.id);
     if (!member || !member.voice.channel) {
-        return interaction.reply({
-            content: '❌ Du musst in einem Voice-Channel sein!',
-            ephemeral: true
+        return interaction.editReply({
+            content: '❌ Du musst in einem Voice-Channel sein!'
         });
     }
 
@@ -90,31 +84,28 @@ async function handleStop(interaction) {
 
     // Check if recording
     if (!activeRecordings.has(voiceChannel.id)) {
-        return interaction.reply({
-            content: `ℹ️ Keine aktive Aufnahme in **${voiceChannel.name}**.`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `ℹ️ Keine aktive Aufnahme in **${voiceChannel.name}**.`
         });
     }
 
     const success = stopRecording(voiceChannel.id);
     if (success) {
-        await interaction.reply({
+        await interaction.editReply({
             content: `⏹️ Voice-Aufnahme in **${voiceChannel.name}** wurde gestoppt.`
         });
     } else {
-        await interaction.reply({
-            content: '❌ Fehler beim Stoppen der Aufnahme.',
-            ephemeral: true
+        await interaction.editReply({
+            content: '❌ Fehler beim Stoppen der Aufnahme.'
         });
     }
 }
 
 async function handleStatus(interaction) {
     if (activeRecordings.size === 0) {
-        return interaction.reply({
+        return interaction.editReply({
             content: 'ℹ️ Keine aktiven Voice-Aufnahmen.\n\n' +
-                     'Nutze `/voice-recording start` in einem Voice-Channel, um die Aufnahme zu starten.',
-            ephemeral: true
+                     'Nutze `/voice-recording start` in einem Voice-Channel, um die Aufnahme zu starten.'
         });
     }
 
@@ -132,8 +123,7 @@ async function handleStatus(interaction) {
 
     statusText += '\nℹ️ Nutze `/voice-recording stop` um die Aufnahme zu beenden.';
 
-    await interaction.reply({
-        content: statusText,
-        ephemeral: true
+    await interaction.editReply({
+        content: statusText
     });
 }

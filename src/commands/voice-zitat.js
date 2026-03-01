@@ -47,6 +47,7 @@ module.exports = {
                         .setDescription('Die ID des Zitats')
                         .setRequired(true))),
     async execute(interaction) {
+        await interaction.deferReply();
         const subcommand = interaction.options.getSubcommand();
 
         if (subcommand === 'speichern') {
@@ -69,9 +70,8 @@ async function handleSave(interaction) {
 
     // Prevent self-save
     if (user.id === interaction.user.id) {
-        return interaction.reply({
-            content: '🎤 Nice try! Du kannst deine eigenen Voice-Zitate nicht speichern. 👃',
-            ephemeral: true
+        return interaction.editReply({
+            content: '🎤 Nice try! Du kannst deine eigenen Voice-Zitate nicht speichern. 👃'
         });
     }
 
@@ -112,9 +112,8 @@ async function handleSave(interaction) {
 
             if (!hasPermission) {
                 const existingTags = db.getAllTags().join(', ');
-                return interaction.reply({
-                    content: `🛑 Du hast keine Berechtigung, neue Tags zu erstellen (${newTags.join(', ')}).\n\nErlaubte Tags: ${existingTags}`,
-                    ephemeral: true
+                return interaction.editReply({
+                    content: `🛑 Du hast keine Berechtigung, neue Tags zu erstellen (${newTags.join(', ')}).\n\nErlaubte Tags: ${existingTags}`
                 });
             } else {
                 newTags.forEach(tag => db.createTag(tag, interaction.user.username));
@@ -129,8 +128,6 @@ async function handleSave(interaction) {
 
     if (voiceChannel) {
         try {
-            await interaction.deferReply();
-
             // Ensure audio directory exists
             const audioDir = path.join(__dirname, '../../data/voice-quotes');
             if (!fs.existsSync(audioDir)) {
@@ -178,19 +175,10 @@ async function handleSave(interaction) {
             replyText += ` [ℹ️ Ohne Audio - Starte die Audio-Aufnahme mit dem Bot im Voice-Channel]`;
         }
 
-        if (interaction.deferred) {
-            await interaction.editReply(replyText);
-        } else {
-            await interaction.reply(replyText);
-        }
+        await interaction.editReply(replyText);
     } catch (error) {
         console.error(error);
-        const errorMsg = { content: 'Fehler beim Speichern des Voice-Zitats.', ephemeral: true };
-        if (interaction.deferred) {
-            await interaction.editReply(errorMsg);
-        } else {
-            await interaction.reply(errorMsg);
-        }
+        await interaction.editReply({ content: 'Fehler beim Speichern des Voice-Zitats.' });
     }
 }
 
@@ -205,9 +193,8 @@ async function handleDisplay(interaction) {
     }
 
     if (!quote) {
-        return interaction.reply({
-            content: '🎤 Keine Voice-Zitate gefunden! Nutze `/voice-zitat speichern` um welche zu erstellen.',
-            ephemeral: true
+        return interaction.editReply({
+            content: '🎤 Keine Voice-Zitate gefunden! Nutze `/voice-zitat speichern` um welche zu erstellen.'
         });
     }
 
@@ -238,7 +225,7 @@ async function handleDisplay(interaction) {
         }
     }
 
-    await interaction.reply(replyOptions);
+    await interaction.editReply(replyOptions);
 }
 
 async function handleSearch(interaction) {
@@ -246,9 +233,8 @@ async function handleSearch(interaction) {
     const results = db.searchVoiceQuotes(keyword);
 
     if (results.length === 0) {
-        return interaction.reply({
-            content: `🔍 Keine Voice-Zitate mit dem Stichwort "${keyword}" gefunden.`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `🔍 Keine Voice-Zitate mit dem Stichwort "${keyword}" gefunden.`
         });
     }
 
@@ -269,7 +255,7 @@ async function handleSearch(interaction) {
         embed.setFooter({ text: `... und ${results.length - 5} weitere` });
     }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleDelete(interaction) {
@@ -277,9 +263,8 @@ async function handleDelete(interaction) {
     const quote = db.getVoiceQuoteById(id);
 
     if (!quote) {
-        return interaction.reply({
-            content: `❌ Voice-Zitat mit ID ${id} nicht gefunden.`,
-            ephemeral: true
+        return interaction.editReply({
+            content: `❌ Voice-Zitat mit ID ${id} nicht gefunden.`
         });
     }
 
@@ -288,12 +273,11 @@ async function handleDelete(interaction) {
     const isCreator = quote.added_by === interaction.user.username;
 
     if (!isAdmin && !isCreator) {
-        return interaction.reply({
-            content: '🛑 Du hast keine Berechtigung, dieses Voice-Zitat zu löschen.',
-            ephemeral: true
+        return interaction.editReply({
+            content: '🛑 Du hast keine Berechtigung, dieses Voice-Zitat zu löschen.'
         });
     }
 
     db.deleteVoiceQuote(id);
-    await interaction.reply(`🗑️ Voice-Zitat #${id} von **${quote.username}** wurde gelöscht.`);
+    await interaction.editReply(`🗑️ Voice-Zitat #${id} von **${quote.username}** wurde gelöscht.`);
 }

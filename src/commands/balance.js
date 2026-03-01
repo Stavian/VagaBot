@@ -11,6 +11,7 @@ module.exports = {
                 .setRequired(false)),
 
     async execute(interaction) {
+        await interaction.deferReply();
         const targetUser = interaction.options.getUser('user') || interaction.user;
         const userData = db.getUserCoins(targetUser.id);
 
@@ -26,6 +27,6 @@ module.exports = {
             .setFooter({ text: 'Nutze /daily für tägliche Belohnungen' })
             .setTimestamp();
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     }
 };

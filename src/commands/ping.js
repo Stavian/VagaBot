@@ -5,6 +5,7 @@ module.exports = {
         .setName('ping')
         .setDescription('Antwortet mit Pong!'),
     async execute(interaction) {
-        await interaction.reply('Pong! Ich bin online.');
+        await interaction.deferReply();
+        await interaction.editReply('Pong! Ich bin online.');
     },
 };
