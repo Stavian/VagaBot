@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, Collection, Events, Partials, EmbedBuilder } 
 const fs = require('node:fs');
 const path = require('node:path');
 const db = require('./database'); // Import database
+const { startStatsServer } = require('./utils/statsServer');
 // const { startMonitoring } = require('./utils/monitor'); // DISABLED - External API monitoring
 
 const client = new Client({
@@ -402,6 +403,7 @@ client.once(Events.ClientReady, c => {
     });
     console.log('[Status] Bot status set to "Passt auf!"');
 
+    startStatsServer();
     // startMonitoring(c); // DISABLED - External API monitoring
 });
 
