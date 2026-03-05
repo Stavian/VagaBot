@@ -77,9 +77,10 @@ module.exports = {
         try {
             await interaction.editReply('Audio wird heruntergeladen...');
 
-            // Step 1: Download audio via yt-dlp
+            // Step 1: Download audio via yt-dlp (point to bundled ffmpeg)
             await spawnAsync(YTDLP_PATH, [
                 '-x', '--audio-format', 'mp3',
+                '--ffmpeg-location', ffmpegStatic,
                 '-o', rawPath,
                 '--no-playlist',
                 url,
