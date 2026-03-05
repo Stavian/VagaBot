@@ -231,6 +231,8 @@ try {
 } catch (error) { /* Ignore */ }
 
 module.exports = {
+    db,
+
     // Config Management
     setConfig: (key, value) => {
         const stmt = db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)');

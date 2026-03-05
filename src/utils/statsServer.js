@@ -1,5 +1,5 @@
 const http = require("http");
-const db = require("../database");
+const { db } = require("../database");
 
 const PORT = parseInt(process.env.STATS_PORT) || 3002;
 
