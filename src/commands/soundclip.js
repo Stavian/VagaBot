@@ -52,11 +52,12 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
 
-        const allowedRoles = db.getConfigRoles();
-        const hasRole = interaction.member.roles.cache.some(r => allowedRoles.includes(r.id));
-        const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
-        if (!isAdmin && !hasRole) {
-            return interaction.editReply('Du hast keine Berechtigung, diesen Befehl zu nutzen.');
+        const allowedRoles = db.getSoundclipRoles();
+        const hasRole = allowedRoles.length === 0
+            ? interaction.member.permissions.has(PermissionFlagsBits.Administrator)
+            : interaction.member.roles.cache.some(r => allowedRoles.includes(r.id)) || interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+        if (!hasRole) {
+            return interaction.editReply('Du hast keine Berechtigung, diesen Befehl zu nutzen. Frag einen Admin, eine Rolle mit `/config soundclip_role add` hinzuzufuegen.');
         }
 
         const url = interaction.options.getString('url');

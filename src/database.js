@@ -263,6 +263,26 @@ module.exports = {
         return current ? current.split(',') : [];
     },
 
+    // Soundclip Role Permission Management
+    addSoundclipRole: (roleId) => {
+        const current = module.exports.getConfig('soundclip_roles');
+        let roles = current ? current.split(',') : [];
+        if (!roles.includes(roleId)) {
+            roles.push(roleId);
+            module.exports.setConfig('soundclip_roles', roles.join(','));
+        }
+    },
+    removeSoundclipRole: (roleId) => {
+        const current = module.exports.getConfig('soundclip_roles');
+        if (!current) return;
+        let roles = current.split(',').filter(id => id !== roleId);
+        module.exports.setConfig('soundclip_roles', roles.join(','));
+    },
+    getSoundclipRoles: () => {
+        const current = module.exports.getConfig('soundclip_roles');
+        return current ? current.split(',') : [];
+    },
+
     // Game Management (LFG)
     addGame: (name) => {
         const stmt = db.prepare('INSERT OR REPLACE INTO games (name, max_players) VALUES (?, ?)');

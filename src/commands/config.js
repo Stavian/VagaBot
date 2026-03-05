@@ -44,17 +44,32 @@ module.exports = {
             group
                 .setName('admin_role')
                 .setDescription('Verwalte Rollen, die diesen Config-Befehl nutzen dürfen.')
-                .addSubcommand(sub => 
+                .addSubcommand(sub =>
                     sub.setName('add')
                        .setDescription('Füge eine Admin-Rolle hinzu.')
                        .addRoleOption(opt => opt.setName('rolle').setDescription('Die Rolle').setRequired(true)))
-                .addSubcommand(sub => 
+                .addSubcommand(sub =>
                     sub.setName('remove')
                        .setDescription('Entferne eine Admin-Rolle.')
                        .addRoleOption(opt => opt.setName('rolle').setDescription('Die Rolle').setRequired(true)))
-                .addSubcommand(sub => 
+                .addSubcommand(sub =>
                     sub.setName('list')
-                       .setDescription('Zeige alle berechtigten Rollen.'))),
+                       .setDescription('Zeige alle berechtigten Rollen.')))
+        .addSubcommandGroup(group =>
+            group
+                .setName('soundclip_role')
+                .setDescription('Verwalte Rollen, die /soundclip nutzen dürfen.')
+                .addSubcommand(sub =>
+                    sub.setName('add')
+                       .setDescription('Füge eine Soundclip-Rolle hinzu.')
+                       .addRoleOption(opt => opt.setName('rolle').setDescription('Die Rolle').setRequired(true)))
+                .addSubcommand(sub =>
+                    sub.setName('remove')
+                       .setDescription('Entferne eine Soundclip-Rolle.')
+                       .addRoleOption(opt => opt.setName('rolle').setDescription('Die Rolle').setRequired(true)))
+                .addSubcommand(sub =>
+                    sub.setName('list')
+                       .setDescription('Zeige alle berechtigten Soundclip-Rollen.'))),
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
         // --- Security Check ---
@@ -94,6 +109,24 @@ module.exports = {
                 } else {
                     const roleMentions = roles.map(id => `<@&${id}>`).join(', ');
                     await interaction.editReply({ content: `**Berechtigte Rollen:** ${roleMentions}\n(Server-Admins haben immer Zugriff)`, ephemeral: true });
+                }
+            }
+        } else if (group === 'soundclip_role') {
+            if (subcommand === 'add') {
+                const role = interaction.options.getRole('rolle');
+                db.addSoundclipRole(role.id);
+                await interaction.editReply({ content: `✅ Rolle **${role.name}** darf jetzt /soundclip nutzen.`, ephemeral: true });
+            } else if (subcommand === 'remove') {
+                const role = interaction.options.getRole('rolle');
+                db.removeSoundclipRole(role.id);
+                await interaction.editReply({ content: `🗑️ Rolle **${role.name}** wurde von /soundclip entfernt.`, ephemeral: true });
+            } else if (subcommand === 'list') {
+                const roles = db.getSoundclipRoles();
+                if (roles.length === 0) {
+                    await interaction.editReply({ content: 'Nur Server-Administratoren können /soundclip nutzen (keine extra Rollen konfiguriert).', ephemeral: true });
+                } else {
+                    const roleMentions = roles.map(id => `<@&${id}>`).join(', ');
+                    await interaction.editReply({ content: `**Soundclip-Rollen:** ${roleMentions}\n(Server-Admins haben immer Zugriff)`, ephemeral: true });
                 }
             }
         } else if (subcommand === 'tag_role') {
