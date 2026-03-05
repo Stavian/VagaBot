@@ -3,6 +3,18 @@ const { db } = require("../database");
 
 const PORT = parseInt(process.env.STATS_PORT) || 3002;
 
+// Bot user IDs excluded from all per-user stats
+const BOT_IDS = [
+  process.env.CLIENT_ID,   // VagaBot itself
+  process.env.FINN_BOT_ID  // Finn Wegbier
+].filter(Boolean);
+
+function botFilter(column) {
+  if (!BOT_IDS.length) return { sql: "", params: [] };
+  const placeholders = BOT_IDS.map(() => "?").join(", ");
+  return { sql: `AND ${column} NOT IN (${placeholders})`, params: BOT_IDS };
+}
+
 function getWeeklyStats() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -14,35 +26,39 @@ function getWeeklyStats() {
     .slice(0, 10);
   const periodEnd = new Date().toISOString().slice(0, 10);
 
+  const bf = botFilter("user_id");
+
   // Top 5 coin holders overall
   const topCoins = db.prepare(`
     SELECT user_id, coins, total_earned
     FROM user_coins
+    WHERE 1=1 ${bf.sql}
     ORDER BY coins DESC
     LIMIT 5
-  `).all();
+  `).all(...bf.params);
 
   // Most quoted users this week
   const mostQuoted = db.prepare(`
     SELECT username, COUNT(*) as count
     FROM quotes
-    WHERE timestamp >= ?
+    WHERE timestamp >= ? ${bf.sql}
     GROUP BY username
     ORDER BY count DESC
     LIMIT 5
-  `).all(sevenDaysAgo);
+  `).all(sevenDaysAgo, ...bf.params);
 
   // Most fails this week
   const topFails = db.prepare(`
     SELECT username, COUNT(*) as count
     FROM quotes
-    WHERE category = 'fail' AND timestamp >= ?
+    WHERE category = 'fail' AND timestamp >= ? ${bf.sql}
     GROUP BY username
     ORDER BY count DESC
     LIMIT 5
-  `).all(sevenDaysAgo);
+  `).all(sevenDaysAgo, ...bf.params);
 
   // Bet records this week (resolved bets only)
+  const bfBet = botFilter("bp.user_id");
   const betRecords = db.prepare(`
     SELECT
       bp.user_id,
@@ -52,11 +68,11 @@ function getWeeklyStats() {
       SUM(CASE WHEN bp.choice = b.winning_option THEN bp.amount ELSE -bp.amount END) as net_coins
     FROM bet_placements bp
     JOIN bets b ON bp.bet_id = b.id
-    WHERE b.resolved = 1 AND bp.placed_at >= ?
+    WHERE b.resolved = 1 AND bp.placed_at >= ? ${bfBet.sql}
     GROUP BY bp.user_id
     ORDER BY wins DESC
     LIMIT 5
-  `).all(sevenDaysAgo);
+  `).all(sevenDaysAgo, ...bfBet.params);
 
   // Coins earned this week (positive transactions only)
   const earnedThisWeek = db.prepare(`
@@ -76,11 +92,11 @@ function getWeeklyStats() {
   const mostActive = db.prepare(`
     SELECT username, COUNT(*) as score
     FROM quotes
-    WHERE timestamp >= ?
+    WHERE timestamp >= ? ${bf.sql}
     GROUP BY username
     ORDER BY score DESC
     LIMIT 5
-  `).all(sevenDaysAgo);
+  `).all(sevenDaysAgo, ...bf.params);
 
   return {
     period: `${periodStart} bis ${periodEnd}`,
