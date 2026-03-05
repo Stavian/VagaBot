@@ -1,7 +1,8 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const ffmpegStatic = require('ffmpeg-static');
+const db = require('../database');
 
 const YTDLP_PATH = '/usr/local/bin/yt-dlp';
 
@@ -50,6 +51,13 @@ module.exports = {
 
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
+
+        const allowedRoles = db.getConfigRoles();
+        const hasRole = interaction.member.roles.cache.some(r => allowedRoles.includes(r.id));
+        const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+        if (!isAdmin && !hasRole) {
+            return interaction.editReply('Du hast keine Berechtigung, diesen Befehl zu nutzen.');
+        }
 
         const url = interaction.options.getString('url');
         const startStr = interaction.options.getString('start');
