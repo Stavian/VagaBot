@@ -13,7 +13,7 @@ module.exports = {
 
     // Restart behavior
     autorestart: true,
-    max_restarts: 10, // Max restarts within min_uptime
+    max_restarts: 50,
     min_uptime: '10s', // Min uptime before considering it stable
     restart_delay: 4000, // Delay between restarts (4 seconds)
 
